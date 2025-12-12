@@ -1,2 +1,15 @@
-# This file will automatically update with entries for new content after a build and reload.
+Items: {
+	DebugItem: {
+		DisplayName: Debug Item
+		Tooltip: ""
+	}
+}
 
+Biomes: {
+	CosmicWorldModBiome: {
+		DisplayName: Cosmic World Mod Biome
+		TownNPCDialogueName: the Cosmic World Mod Biome
+	}
+}
+
+NPCs.IcarusBoss.DisplayName: Icarus Boss
