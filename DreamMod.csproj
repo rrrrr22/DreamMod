@@ -13,12 +13,12 @@
 	  	<Reference Include="Origins">
 	  	  <HintPath>..\ModAssemblies\Origins.dll</HintPath>
 	  	</Reference>
+	  	<Reference Include="PegasusLib">
+	  	  <HintPath>..\ModAssemblies\PegasusLib.dll</HintPath>
+	  	</Reference>
 	  	<Reference Include="SubworldLibrary">
 			<HintPath>..\ModAssemblies\SubworldLibrary.dll</HintPath>
 	  </Reference>
-	</ItemGroup>
-	<ItemGroup>
-	  <Folder Include="Common\Graphics\Shaders\" />
 	</ItemGroup>
 
 

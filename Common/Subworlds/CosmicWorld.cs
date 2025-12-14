@@ -1,4 +1,8 @@
-﻿using Microsoft.Xna.Framework;
+﻿using DreamMod.Common.Graphics;
+using DreamMod.Common.Graphics.Primitives;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Origins;
 using SubworldLibrary;
 using System;
 using System.Collections.Generic;
@@ -8,6 +12,9 @@ using System.Threading.Tasks;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using Terraria.GameContent.Ambience;
+using Terraria.GameContent.Skies;
+using Terraria.Graphics.Effects;
 using Terraria.ID;
 using Terraria.IO;
 using Terraria.ModLoader;
@@ -26,7 +33,7 @@ namespace DreamMod.Common.Subworlds
         static int beachWidth = 0;
         public override void OnEnter()
         {
-
+            SubworldSystem.hideUnderworld = true;
         }
 
         public override void OnExit()
@@ -42,21 +49,20 @@ namespace DreamMod.Common.Subworlds
 
         protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
         {
-            int groundLevel = 300;
+            int groundLevel = 425;
             Main.spawnTileX = 250;
             Main.spawnTileY = groundLevel;
             Main.worldSurface = 500;
             Main.rockLayer = 500;
             for (int y = groundLevel; y < 500; y++)
                 for (int x = 0; x < 500; x++)
-                    WorldGen.PlaceWall(x, y, x % 2 == 0 ? WallID.MercuryBrickWall : WallID.StarRoyaleBrickWall, true);
+                    WorldGen.PlaceTile(x, y, x % 2 == 0 ? TileID.MercuryBrick : TileID.StarRoyaleBrick, true);
 
             for (int x = 0; x < 500; x++)
-            { 
-                WorldGen.PlaceTile(x, groundLevel - 1, TileID.StarRoyaleBrick, true);
-                WorldGen.PlaceTile(x, groundLevel - 2, TileID.StarRoyaleBrick, true);
-                
-                for(int i = 0; i < 1; i++)
+            {
+
+
+                for (int i = 0; i < 1; i++)
                     WorldGen.PlaceTile(x, groundLevel - 23 - 25 * i, TileID.Platforms, true, style: 14);
 
 
@@ -64,16 +70,22 @@ namespace DreamMod.Common.Subworlds
 
             for (int y = groundLevel - 25; y < 500; y++)
                 for (int x = 0; x < 500; x++)
-                    if(x % 6 == 0 && x % 4 == 0)
-                        WorldGen.PlaceWall(x, (int)MathHelper.Lerp(y,y - 14,Utils.PingPongFrom01To010(x/500f)), WallID.MercuryBrickWall, true);
+                    if (x % 6 == 0 && x % 4 == 0)
+                        WorldGen.PlaceWall(x, (int)MathHelper.Lerp(y, y - 14, Utils.PingPongFrom01To010(x / 500f)), WallID.MercuryBrickWall, true);
 
         }
     }
     public class CosmicWorldSystem : ModSystem
     {
-        public override void PostUpdatePlayers()
+        public override void Load()
         {
             
+        }
+
+
+        public override void PostUpdatePlayers()
+        {
+
 
             //i hope this will not break in upcoming terraria updates...
             if (Main.myPlayer == 255 || !SubworldSystem.IsActive<CosmicWorld>())
@@ -123,27 +135,57 @@ namespace DreamMod.Common.Subworlds
 
     public class CosmicWorldModBiome : ModBiome
     {
-        public override ModSurfaceBackgroundStyle SurfaceBackgroundStyle => new CosmicWorldModSurfaceBackgroundStyle();
-         
+        public override ModSurfaceBackgroundStyle SurfaceBackgroundStyle => ModContent.GetInstance<CosmicWorldModSurfaceBackgroundStyle>();
         public override float GetWeight(Player player)
         {
             return 1f;
         }
-        public override SceneEffectPriority Priority => SceneEffectPriority.BossHigh;
+        public override SceneEffectPriority Priority => SceneEffectPriority.BiomeHigh;
         public override bool IsBiomeActive(Player player)
         {
-            return SubworldSystem.IsActive<CosmicWorld>();
+            return true;
+        }
+
+        public override void OnInBiome(Player player)
+        {
+            if(SubworldSystem.IsActive<CosmicWorld>());
+                DisableWorldBackgroundElements();
+        }
+
+        public static void DisableWorldBackgroundElements()
+        {
+
+            for (int i = 0; i < Main.maxClouds; i++)
+            {
+                Main.cloud[i].active = false;
+            }
+            Main.cloudBGActive = 0;
+
+            
         }
     }
-
     public class CosmicWorldModSurfaceBackgroundStyle : ModSurfaceBackgroundStyle
     {
         public override void ModifyFarFades(float[] fades, float transitionSpeed)
         {
+
         }
+        private static VertexRectangle rect = new();
         public override int ChooseCloseTexture(ref float scale, ref double parallax, ref float a, ref float b)
         {
-            return ModContent.GetModBackgroundSlot("DreamMod/Common/Subworlds/CosmicBG");
+            return -1;
+        }
+        public override bool PreDrawCloseBackground(SpriteBatch spriteBatch)
+        {
+
+            ModdedShaderHandler shader = EffectsLoader.shaderHandlers["CosmicBackground"];
+
+            //shader.setProperties([Color.Orange.ToVector3(),Color.PowderBlue.ToVector3(),Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value, shaderData: new Vector4(0, 0, 0, 0));
+            //shader.apply();
+
+            //rect.Draw(Main.Camera.Center - Main.screenPosition, Color.White, size: Main.ScreenSize.ToVector2(), rotationCenter: Main.LocalPlayer.Center);
+
+            return false;
         }
     }
 }

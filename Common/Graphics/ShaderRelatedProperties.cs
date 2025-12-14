@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System;
 using Terraria.Graphics.Shaders;
 using Terraria.ModLoader;
+using System.Runtime.CompilerServices;
 
 
 namespace DreamMod.Common.Graphics;
@@ -25,11 +26,12 @@ public struct TrailShaderSettings {
 
 public struct ShaderSettings {
 
-	public Color Color;
+	public Vector3[] Colors;
 	public Asset<Texture2D> image1;
 	public Asset<Texture2D> image2;
 	public Asset<Texture2D> image3;
 	public Vector4 shaderData;
+
 }
 /// <summary>
 /// Keep in mind that:
@@ -39,7 +41,7 @@ public struct ShaderSettings {
 public class ModdedShaderHandler : ILoadable {
 	static GraphicsDevice GraphicsDevice => Main.instance.GraphicsDevice;
 	Asset<Effect> _effect;
-	Color _color = new Color(0, 0, 0);
+	Vector3[] _colors = new Vector3[3];
 	Texture2D _texutre1 = null;
 	Texture2D _texutre2 = null;
 	Texture2D _texutre3 = null;
@@ -50,15 +52,15 @@ public class ModdedShaderHandler : ILoadable {
 		this._effect = effect;
 
 	}
-	public void setProperties(Color color, Texture2D texutre1 = null, Texture2D texutre2 = null, Texture2D texutre3 = null, Vector4 shaderData = default) {
-		this._color = color;
+	public void setProperties(Vector3[] colors, Texture2D texutre1 = null, Texture2D texutre2 = null, Texture2D texutre3 = null, Vector4 shaderData = default) {
+		this._colors = colors;
 		this._texutre1 = texutre1;
 		this._texutre2 = texutre2;
 		this._texutre3 = texutre3;
 		this._shaderData = shaderData;
 	}
 	public void setProperties(ShaderSettings shaderSettings) {
-		this._color = shaderSettings.Color;
+		this._colors = shaderSettings.Colors;
 		this._texutre1 = shaderSettings.image1?.Value;
 		this._texutre2 = shaderSettings.image2?.Value;
 		this._texutre3 = shaderSettings.image3?.Value;
@@ -89,8 +91,11 @@ public class ModdedShaderHandler : ILoadable {
 		setupTextures();
 		effect.Parameters["viewWorldProjection"].SetValue(Matrix.CreateTranslation(new Vector3(-Main.screenPosition, 0)) * Main.GameViewMatrix.TransformationMatrix * Matrix.CreateOrthographicOffCenter(left: 0, right: viewport.Width, bottom: viewport.Height, top: 0, zNearPlane: -1, zFarPlane: 10));
 		effect.Parameters["time"].SetValue(Main.GlobalTimeWrappedHourly);
-		effect.Parameters["color"].SetValue(_color.ToVector3());
+		effect.Parameters["colors"].SetValue(_colors);
 		effect.Parameters["shaderData"].SetValue(_shaderData);
+		effect.Parameters["screenSize"].SetValue(Main.ScreenSize.ToVector2());
+		effect.Parameters["screenPosition"].SetValue(Main.screenPosition);
+		
 		effect.CurrentTechnique.Passes[0].Apply();
 		
 	}

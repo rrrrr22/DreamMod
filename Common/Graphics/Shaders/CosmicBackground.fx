@@ -1,0 +1,150 @@
+#pragma warning (disable : 4717) 
+sampler2D image1 : register(s1);
+sampler2D image2 : register(s2);
+sampler2D image3 : register(s3);
+
+float4x4 viewWorldProjection;
+float time;
+float4 shaderData;
+float3 colors[3];
+float2 screenPosition;
+float2 screenSize;
+float2 screenCenter;
+float PingPong(float value)
+{
+    value %= 1;
+    if (value < 0)
+        value += 1;
+
+    if (value >= 0.5)
+        return 2 - value * 2;
+
+    return value * 2;
+}
+float2 Rotate(float2 uv, float amount)
+{
+    float2 uv2 = uv;
+    float s = sin(amount);
+    float c = cos(amount);
+    uv2.x = (uv.x * c) + (uv.y * -s);
+    uv2.y = (uv.x * s) + (uv.y * c);
+
+    return uv2;
+    
+}
+float2 expandInsideOutside(float2 uv)
+{
+    float1 t = time + shaderData.w;
+    float2 uv2 = Rotate(uv, t);
+    float1 d = length(uv2);
+
+    return (d * uv2 + ((t) - uv2));
+    
+}
+
+float star(float2 uv, float flare)
+{
+    float d = length(uv);
+    float m = .05 / d;
+    
+    float rays = max(0, 1-abs(uv.x*uv.y* 255));
+    m += rays * flare;
+    uv *= Rotate(uv,3.1415/4.);
+    rays = max(0, 1 - abs(uv.x * uv.y * 255));
+    m += rays * .3 * flare;
+    return m;
+}
+float2 random(float2 p)
+{
+    p = frac(p * float2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    float x = frac(p.x * 125.63);
+    float y = frac(p.y * 735.32);
+    return float2(x,y) - .5;
+}
+
+float4 layer(float2 uv, float l)
+{
+    float4 layer = float4(0,0,0,0);
+    float2 gridUV = frac(uv * 8) - .5;
+    float2 gridID = floor(uv * 8) - .5;
+    for (float y = -1; y <= 1.; y++)
+    {
+        for (float x = -1; x <= 1.; x++)
+        {
+            float2 offset = float2(x, y);
+            float2 rv = random(gridID + offset + l);
+            float size = saturate((sin(time * 5 * rv.x)) * rv.y * .5) + .05;
+            float d = length(gridUV - offset - rv);
+            layer += star(gridUV - offset - rv, rv.y * 0.5) * size * float4(rv.x * 7., rv.x * 6, rv.y * 8, 0) * smoothstep(1,0,d);
+            
+        }
+    
+    }
+    return layer;
+}
+
+float4 Cosmic(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 position : SV_Position) : COLOR0
+{
+    float2 centeredUV = float2(coords.x * (screenSize.x / screenSize.y), coords.y * (screenSize.x / screenSize.y));
+    float2 BHcenteredUV = centeredUV - float2(lerp(1, 0, screenPosition.x / 500 / 16), lerp(1, 0, screenPosition.y / 500 / 16));
+    BHcenteredUV *= 1.5;
+    float2 pixelatedUV = round(BHcenteredUV * (256.)) / 256.;
+
+    float d = length(pixelatedUV);
+    float angle = atan2(pixelatedUV.y, pixelatedUV.x);
+
+
+    pixelatedUV = Rotate(pixelatedUV,-time * 0.4);
+    
+    float angle2 = atan2(pixelatedUV.y, pixelatedUV.x);
+    float2 VortexUV = float2(sin(angle + d * lerp(25, 5, d) - time * 0.03), d * lerp(5, 5, d) + time * 0.03);
+    float2 VortexUV2 = float2(sin(angle2 + d * lerp(25, 5, d) - time * 0.03), d * lerp(5, 5, d) + time * 0.03) * 2;
+
+    float4 finalCol = tex2D(image1, VortexUV).r;
+    finalCol += tex2D(image1, VortexUV2);
+
+    finalCol = floor(finalCol * (6)) / 6;
+
+    finalCol *= smoothstep(1.25,0,d);
+    
+    //blackhole
+    finalCol = lerp(float4(0, 0, 0, 1), finalCol, saturate(smoothstep(0.2, 1, d * 2)));
+
+    finalCol.rgb *= lerp(colors[0], lerp(colors[1],colors[2],VortexUV2.x), finalCol.r);
+    finalCol *= 3;
+
+    
+    //star "system" if you could call it that lol
+    float4 space = float4(0,0,0,1);
+
+    float2 starUV1 = coords - float2(lerp(1, 0, screenPosition.x / 500 / 16), lerp(1, 0, screenPosition.y / 500 / 16));
+    float2 starUV2 = coords - float2(lerp(1, 0, screenPosition.x / 500 / 24), lerp(1, 0, screenPosition.y / 500 / 24));
+    float2 starUV3 = coords - float2(lerp(1, 0, screenPosition.x / 500 / 32), lerp(1, 0, screenPosition.y / 500 / 32));
+    space += layer(starUV1,.2);
+    space += layer(starUV2,.4);
+    space += layer(starUV3,.6);
+    
+    //finally, the aura thingy
+    
+    float4 aura = tex2D(image1, starUV1 + .6);
+    aura.a *= aura.r * 15;
+
+    aura += tex2D(image1, starUV2 + .4);
+    aura.a *= aura.r * 15;
+
+    aura += tex2D(image1, starUV3 + .2);
+    aura.a *= aura.r * 15;
+    aura.rgb *= 0.1;
+    
+    return lerp(lerp(lerp(float4(0, 0, 0, 2), aura * float4(coords.yxx,1) * 2, aura.r), finalCol, finalCol), space, space);
+}
+    
+technique Technique1
+{
+    pass Cosmic
+    {
+        
+        PixelShader = compile ps_3_0 Cosmic();
+    }
+}
