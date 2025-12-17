@@ -30,7 +30,6 @@ namespace DreamMod.Common.Subworlds
         {
             new FlatWorld_Pass("Generating The Cosmos...",0.01f)
         };
-        static int beachWidth = 0;
         public override void OnEnter()
         {
             SubworldSystem.hideUnderworld = true;
@@ -148,8 +147,11 @@ namespace DreamMod.Common.Subworlds
 
         public override void OnInBiome(Player player)
         {
-            if(SubworldSystem.IsActive<CosmicWorld>());
+            if(SubworldSystem.IsActive<CosmicWorld>())
+            {
                 DisableWorldBackgroundElements();
+                player.wingTime = player.wingTimeMax;
+            }
         }
 
         public static void DisableWorldBackgroundElements()
@@ -180,8 +182,8 @@ namespace DreamMod.Common.Subworlds
 
             ModdedShaderHandler shader = EffectsLoader.shaderHandlers["CosmicBackground"];
 
-            //shader.setProperties([Color.Orange.ToVector3(),Color.PowderBlue.ToVector3(),Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value, shaderData: new Vector4(0, 0, 0, 0));
-            //shader.apply();
+            shader.setProperties([Color.Orange.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value, shaderData: new Vector4(0, 0, 0, 0));
+            shader.apply();
 
             //rect.Draw(Main.Camera.Center - Main.screenPosition, Color.White, size: Main.ScreenSize.ToVector2(), rotationCenter: Main.LocalPlayer.Center);
 

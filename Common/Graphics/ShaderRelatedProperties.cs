@@ -95,6 +95,7 @@ public class ModdedShaderHandler : ILoadable {
 		effect.Parameters["shaderData"].SetValue(_shaderData);
 		effect.Parameters["screenSize"].SetValue(Main.ScreenSize.ToVector2());
 		effect.Parameters["screenPosition"].SetValue(Main.screenPosition);
+		effect.Parameters["playerPosition"]?.SetValue(Main.LocalPlayer.Center);
 		
 		effect.CurrentTechnique.Passes[0].Apply();
 		

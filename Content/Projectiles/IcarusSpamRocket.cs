@@ -23,6 +23,7 @@ namespace DreamMod.Content.Projectiles
         public override void SetStaticDefaults()
         {
         }
+        public int MaxTimeLeft = 150;
         public override string Texture => "Terraria/Images/Projectile_"+ProjectileID.RocketI;
         public override void SetDefaults()
         {
@@ -31,15 +32,27 @@ namespace DreamMod.Content.Projectiles
             Projectile.aiStyle = -1;
             Projectile.friendly = false;
             Projectile.tileCollide = true;
+            Projectile.timeLeft = 30 + Main.rand.Next(0,60);
             
         }
-
+        public ref float target => ref Projectile.ai[0];
         public override void AI()
         {
             base.AI();
+            Projectile.velocity = Projectile.rotation.ToRotationVector2() * Projectile.ai[1];
+            
+            if(target != -1)
+            {
+                Player player = Main.player[(int)target];
+               // float distCatchingUp = MathHelper.Clamp(Utils.GetLerpValue(1,4,player.Distance(Projectile.Center) / 250),1,4);
+                Projectile.rotation = Projectile.rotation.AngleTowards(Projectile.Center.DirectionTo(player.Center).ToRotation(),0.025f * MathHelper.Lerp(.25f,3,(float)Projectile.timeLeft / MaxTimeLeft));
+                Projectile.velocity += Projectile.ai[2] == -1 ? Vector2.Zero : player.velocity;
+                Projectile.tileCollide = false;
+            }
+
             Dust.NewDustPerfect(Projectile.Center,DustID.Smoke,Vector2.Zero,newColor: Color.Orange);
-            Projectile.velocity.Y += .25f;
-            Projectile.velocity.WithMaxLength(15);
+            
+
 
         }
 
@@ -53,13 +66,13 @@ namespace DreamMod.Content.Projectiles
             return false;
         }
 
-        public override bool OnTileCollide(Vector2 oldVelocity)
+        public override void OnKill(int timeLeft)
         {
             PunchCameraModifier p = new(Projectile.Center,Main.rand.NextVector2Circular(1,1),5,3,5,100000);
             Main.instance.CameraModifiers.Add(p);
             Projectile.NewProjectile(Projectile.GetSource_Death(),Projectile.Center,Vector2.Zero,ModContent.ProjectileType<IcarusFlame>(),50,0);
 
-            return true;
         }
+
     }
 }

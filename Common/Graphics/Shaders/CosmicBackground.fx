@@ -88,7 +88,7 @@ float4 Cosmic(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 pos
 {
     float2 centeredUV = float2(coords.x * (screenSize.x / screenSize.y), coords.y * (screenSize.x / screenSize.y));
     float2 BHcenteredUV = centeredUV - float2(lerp(1, 0, screenPosition.x / 500 / 16), lerp(1, 0, screenPosition.y / 500 / 16));
-    BHcenteredUV *= 1.5;
+    BHcenteredUV *= 1;
     float2 pixelatedUV = round(BHcenteredUV * (256.)) / 256.;
 
     float d = length(pixelatedUV);
@@ -112,7 +112,7 @@ float4 Cosmic(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 pos
     finalCol = lerp(float4(0, 0, 0, 1), finalCol, saturate(smoothstep(0.2, 1, d * 2)));
 
     finalCol.rgb *= lerp(colors[0], lerp(colors[1],colors[2],VortexUV2.x), finalCol.r);
-    finalCol *= 3;
+    finalCol *= 1;
 
     
     //star "system" if you could call it that lol

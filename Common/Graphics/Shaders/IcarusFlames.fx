@@ -44,7 +44,7 @@ float2 expandInsideOutside(float2 uv, float dir)
 
 float easeBack(float x)
 {
-    const float c1 = 3;
+    const float c1 = 2;
     const float c2 = c1 * 1.525;
 
     return x < 0.5
@@ -54,43 +54,23 @@ float easeBack(float x)
 
 float4 IcarusFlames(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 position : SV_Position) : COLOR0
 {
-    float MAXTIMELEFT = 180;
-    float timeleft = shaderData.y;
-    float progress = lerp(1, 0, ((timeleft - 160) / (MAXTIMELEFT - 150)));
-
+  
     float2 uv = coords * 2. - 1.;
+    float dest = distance(float2(0.5 * 2.0 - 1.0, 0.5 * 2.0 - 1.0), uv);
+    float destWithTime = distance(float2(0.5 * 2.0 - 1.0, 0.5 * 2.0 - 1.0), ((uv)));
     float d = length(uv);
-    float blub = 1 / d.xxxx * 1;
-    blub *= smoothstep(1,0,d);
-    float4 fireTexture = tex2D(image1, float2(uv.x, uv.y + time + shaderData.x) * 2) * blub;
-    fireTexture.a *= fireTexture.r;
+    float2 polar = float2(atan2(uv.y, uv.x) / (3.1415 * 0.25), dest);
+    float4 fire = (tex2D(image1, polar - time) + 1 / d * .5) * (smoothstep(1, 0, d) * 1);
+    float4 fireMask = (tex2D(image1, polar * 1.2 - time) + 1 / d * .5) * (smoothstep(1, 0, d) * 0.5);
+    float4 finalFire = fire * lerp(float4(colors[0], 0), float4(colors[1], 1), fireMask.r);
+    finalFire = lerp(float4(0, 0, 0, 0), finalFire, dest);
+    float4 explosion = 0;
+
+    float4 explosionMask = 0;
     
-    //explosion
-
-    float4 noise1 = tex2D(image1, uv + time);
-    float4 noise2 = tex2D(image1, expandInsideOutside(uv, -1));
-    float circle1 = clamp(smoothstep(0, 1, d / progress) * 15, 0, 1);
-    circle1 *= lerp(0, noise1.r, 1 / d);
-    float circle2 = smoothstep(0.1, 1, progress / d);
-    float circle3 = clamp(-1 * (0.5 - distance(float2(0.5 * 2.0 - 1.0, 0.5 * 2.0 - 1.0), uv) * (lerp(0, 1, 1 / progress))), 0, 1);
-    circle3 *= 2;
-    circle3 *= smoothstep(0.9, 1, clamp(progress, 0, 0.75) / d);
-
-
-    float4 color1 = float4(colors[2].rgb, 1);
-    color1 *= 15;
-    color1 += noise1;
-    color1.a = color1.r;
-    color1.rgb += colors[2] * (d - 8);
-    color1 /= noise1.r * 1.5;
-    color1.a = colors[0].r;
-
-    float4 fireball = fireTexture.a * float4(lerp(colors[1], lerp(colors[0], colors[2], (float)shaderData.y / MAXTIMELEFT), blub * fireTexture.a), 1);
-    //step(d,0.75) removes the corners since full circles only take 3/4 of the rendertarget 
-    return lerp(color1 * circle3 * (((timeleft - 160) / MAXTIMELEFT) + 1),fireball, fireball);
+    float4 finalExplosion = step(destWithTime, (shaderData.y)) * smoothstep(0, (shaderData.y), destWithTime);
     
-    
-     
+    return lerp(finalFire,finalExplosion,finalExplosion);
     
 }
     

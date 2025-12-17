@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using DreamMod.Common.Graphics;
+using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,14 +10,30 @@ using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
+using static Origins.Tiles.Riven.Shelf_Coral_TE;
 
 namespace DreamMod.Common.Systems
 {
-    public abstract class FiniteStateMachineNPC : ModNPC
+    public abstract class FiniteStateMachineNPC : ModNPC, IZDepth
     {
         public NPCAIStates states = null;
+        public int currentState
+        {
+            get
+            {
+                if (states != null)
+                    return states.currentState.type;
+                return -1;
+
+            }
+
+        }
+        public int currentStateCounter => states.currentState.counter;
+        public static int StateType<T>() where T : AIState => ModContent.GetInstance<T>().type;
+
         public override sealed void OnSpawn(IEntitySource source)
         {
+            zDepth = 1;
             states = new(NPC, RegisterStates());
             PostOnSpawn(source);
         }
@@ -30,10 +47,14 @@ namespace DreamMod.Common.Systems
         }
         public override sealed bool PreAI()
         {
+            PreStateUpdate();
             states.Update();
+            //zDepth = MathF.Sin((float)Main.timeForVisualEffects * 0.01f) * 2 + 2;
+
             PostStateUpdate();
             return false;
         }
+        public virtual void PreStateUpdate() { }
         public virtual void PostStateUpdate()
         {
         }
@@ -59,6 +80,8 @@ namespace DreamMod.Common.Systems
         {
             NPC.aiAction = reader.ReadInt32();
         }
+
+        public float zDepth { get; set; }
     }
     public class AIState : ILoadable
     {
@@ -67,6 +90,15 @@ namespace DreamMod.Common.Systems
             AIState state = (AIState)AIStates[type].MemberwiseClone();
             state.NPC = npc;
             return state;
+        }
+        public float zDepth
+        {
+            get => ((FiniteStateMachineNPC)NPC.ModNPC).zDepth; 
+            
+            set
+            {
+                ((FiniteStateMachineNPC)NPC.ModNPC).zDepth = value;
+            }
         }
         public static int StateType<T>() where T : AIState => ModContent.GetInstance<T>().type;
         public static readonly List<AIState> AIStates = new List<AIState>();
@@ -78,7 +110,13 @@ namespace DreamMod.Common.Systems
             {
                 NPC.TargetClosest();
                 if (NPC.HasValidTarget)
-                    return Main.player[NPC.target];
+                {
+                    Player player = Main.player[NPC.target];
+                    if (player.Center.X == NPC.Center.X)
+                        NPC.direction = player.direction;
+                    return player;
+
+                }
                 return null;
             }
 
@@ -196,7 +234,7 @@ namespace DreamMod.Common.Systems
             NPC.velocity = Vector2.Zero;
             NPC.EncourageDespawn(30);
         }
-        
+
     }
 
 }

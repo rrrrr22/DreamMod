@@ -1,4 +1,5 @@
-﻿using DreamMod.Common.Graphics;
+﻿using DreamMod.Common;
+using DreamMod.Common.Graphics;
 using DreamMod.Common.Graphics.Primitives;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -35,9 +36,9 @@ namespace DreamMod.Content.Projectiles
 			Main.spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Additive, SamplerState.LinearClamp, DepthStencilState.Default, RasterizerState.CullNone, null, Main.GameViewMatrix.ZoomMatrix);
 
             ModdedShaderHandler shader = EffectsLoader.shaderHandlers["IcarusFlames"];
-            shader.setProperties([Color.Orange.ToVector3(),Color.Red.ToVector3(),Color.Cyan.ToVector3()], TextureAssets.Extra[193].Value,TextureAssets.Projectile[Type].Value, shaderData: new Vector4(Projectile.rotation, Projectile.timeLeft, Projectile.Size.X * 5, Projectile.Size.Y));
+            shader.setProperties([Color.Orange.ToVector3(),Color.Wheat.ToVector3(),Color.Wheat.ToVector3()], TextureAssets.Extra[193].Value,TextureAssets.Projectile[Type].Value, shaderData: new Vector4(Projectile.rotation, Utils.GetLerpValue(0,1,((float)Projectile.timeLeft) / 180,true), Projectile.Size.X * 5, Projectile.Size.Y));
             shader.apply();
-            rect.Draw(Projectile.Center - Main.screenPosition,Color.White,Projectile.Size * new Vector2(5,2)* Utils.GetLerpValue(0,1,(float)(Projectile.timeLeft) / 30,true),0,Projectile.Center);
+            rect.Draw(Projectile.Center - Main.screenPosition,Color.White,Projectile.Size * new Vector2(2,2)* Utils.GetLerpValue(0,1,(float)(Projectile.timeLeft) / 30,true),0,Projectile.Center);
 
 
             return false;
