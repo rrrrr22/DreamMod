@@ -185,7 +185,7 @@ namespace DreamMod.Common.Subworlds
             shader.setProperties([Color.Orange.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value, shaderData: new Vector4(0, 0, 0, 0));
             shader.apply();
 
-            //rect.Draw(Main.Camera.Center - Main.screenPosition, Color.White, size: Main.ScreenSize.ToVector2(), rotationCenter: Main.LocalPlayer.Center);
+            rect.Draw(Main.Camera.Center - Main.screenPosition, Color.White, size: Main.ScreenSize.ToVector2(), rotationCenter: Main.LocalPlayer.Center);
 
             return false;
         }

@@ -15,9 +15,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Terraria;
+using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.Graphics;
+using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
 using static DreamMod.Content.Npcs.IcarusBoss;
@@ -51,6 +53,7 @@ namespace DreamMod.Content.Npcs
             NPC.noTileCollide = true;
             NPC.lifeMax = 125000;
             NPC.scale = 1f;
+            AnimationType = NPCID.DukeFishron;
             dashFlashAlphaTweens.Tweens =
             [
             new Tween<float>(MathHelper.Lerp,false).SetProperties(0,1,TweenEaseType.OutBack,20),
@@ -87,11 +90,12 @@ namespace DreamMod.Content.Npcs
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
         {
             Texture2D bodyTexture = TextureAssets.Npc[Type].Value;
-            drawColor = (CurrentPerspective == Perspectives.Side ? Color.Silver : Color.Firebrick);
+            //drawColor = (CurrentPerspective == Perspectives.Side ? Color.Silver : Color.Firebrick);
             this.ApplyZDepthColor(ref drawColor);
-            Vector2 scale = new Vector2(NPC.scale * 5);
+            Vector2 scale = new Vector2(NPC.scale *5);
             this.ApplyZDepthScale(ref scale);
-            var drawData = new DrawData(bodyTexture, NPC.Center - (screenPos) - Vector2.UnitY * MathHelper.Lerp(1, 0, zDepth) * 64f, null, drawColor, NPC.rotation, (bodyTexture.Size() / 2f), scale, NPC.direction == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally, 0);
+            Rectangle rectangle = bodyTexture.Frame(1,8,0,1);
+            var drawData = new DrawData(bodyTexture, NPC.Center - (screenPos) - Vector2.UnitY * MathHelper.Lerp(1, 0, zDepth) * 64f, null, drawColor, NPC.rotation, bodyTexture.Size() / 2f, scale, NPC.direction == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally, 0);
 
             DrawVFX(drawData, spriteBatch);
             DrawThrustersAndCore(drawData.position);
@@ -130,8 +134,6 @@ namespace DreamMod.Content.Npcs
                         dirAndLength = new Vector2(-75, 75);
                         dirAndLength = isVelocityBased ? dirAndLength : -NPC.velocity * 7;
 
-
-
                         DrawOneThruster(screenPos - new Vector2(32, -32) + dirAndLength * zDepth, dirAndLength, (!isVelocityBased ? dirAndLength.Length() / 2 : 0) + 128 * MathHelper.Clamp(MathHelper.Lerp(0.0f,1f,zDepth),0,1f), Color.Turquoise, screenPos, true, -Vector2.UnitY * MathHelper.Lerp(1,0,zDepth) * 120f);
 
                         break;
@@ -144,7 +146,7 @@ namespace DreamMod.Content.Npcs
         public void DrawOneThruster(Vector2 position, Vector2 lengthAndDirection, float width, Color color, Vector2 screenPos, bool flip, Vector2 originOffset = default)
         {
             ModdedShaderHandler shader = EffectsLoader.shaderHandlers["IcarusThrusters"];
-            shader.setProperties([Color.Turquoise.ToVector3(), Color.White.ToVector3(), Color.Green.ToVector3()], TextureAssets.Extra[193].Value, shaderData: new Vector4(flip ? 1 : 1));
+            shader.setProperties([Color.Turquoise.ToVector3(), Color.Turquoise.ToVector3(), Color.Turquoise.ToVector3()], TextureAssets.Extra[ExtrasID.MagicMissileTrailErosion].Value, shaderData: new Vector4(flip ? 1 : 1));
             shader.apply();
 
             Vector2[] positions = [position, position + lengthAndDirection];
@@ -219,7 +221,7 @@ namespace DreamMod.Content.Npcs
         {
             anchorPos = NPC.Center;
             NPC.localAI[1] = (float)Perspectives.Side;
-
+            NPC.rotation = 0;
         }
         public override void OnStateUpdate(CommonNPCInfo info)
         {
@@ -245,7 +247,7 @@ namespace DreamMod.Content.Npcs
 
             NPC.Center = Vector2.Lerp(NPC.Center, NPC.targetRect.Center() + new Vector2(550 * NPC.direction * -1, -300), 0.1f);
 
-            if ((Main.rand.Next(150) == 0 && counter > 120))
+            if ((Main.rand.Next(30) == 0 && counter > 120))
             {
                 switch (Main.rand.Next(2))
                 {
@@ -257,7 +259,7 @@ namespace DreamMod.Content.Npcs
                         }
                     case 1:
                         {
-                            ChangeState(StateType<IcarusFlamethrowerState>());
+                            ChangeState(StateType<IcarusSlamState>());
                             break;
                         }
                 }
@@ -276,6 +278,7 @@ namespace DreamMod.Content.Npcs
             NPC.ai[0]--;
             NPC.velocity = (Target.Center + Target.velocity.SafeNormalize(Vector2.UnitY) * 40).DirectionFrom(NPC.Center) * 40;
             NPC.localAI[1] = (float)Perspectives.Side;
+            SoundEngine.PlaySound(SoundID.Item131 with { Pitch = 0},NPC.Center);
         }
         public override void OnStateUpdate(CommonNPCInfo info)
         {
@@ -389,6 +392,7 @@ namespace DreamMod.Content.Npcs
                     for (int i = 0; i < 3; i++)
                         Projectile.NewProjectileDirect(NPC.GetSource_FromAI(), NPC.Center, new Vector2(0, 0), ModContent.ProjectileType<IcarusSpamRocket>(), 50, 0, -1, Target.whoAmI, 15, -1).rotation = new Vector2(-NPC.direction, 0).ToRotation();
                 NPC.localAI[1] = (float)Perspectives.Side;
+                SoundEngine.PlaySound(SoundID.Item131 with { Pitch = 1},NPC.Center);
 
                 NPC.velocity = new Vector2(NPC.direction * (Target.velocity.Length() + 65), -5);
             }
@@ -400,6 +404,8 @@ namespace DreamMod.Content.Npcs
                 Projectile.NewProjectileDirect(NPC.GetSource_FromAI(), NPC.Center, new Vector2(0, 0), ModContent.ProjectileType<IcarusSpamRocket>(), 50, 0, -1, Target.whoAmI, 12, -1).rotation = 0;
                 Projectile.NewProjectileDirect(NPC.GetSource_FromAI(), NPC.Center, new Vector2(0, 0), ModContent.ProjectileType<IcarusSpamRocket>(), 50, 0, -1, Target.whoAmI, 12, -1).rotation = MathHelper.Pi;
                 NPC.localAI[1] = (float)Perspectives.Front;
+                NPC.rotation = Vector2.UnitY.ToRotation();
+                SoundEngine.PlaySound(SoundID.Item131 with { Pitch = 1},NPC.Center);
 
             }
             if (NPC.Center.Y > Target.Center.Y + 500)
@@ -407,6 +413,7 @@ namespace DreamMod.Content.Npcs
 
                 isFinishedSlamming = true;
                 counter = 0;
+                NPC.rotation = 0;
             }
         }
     }

@@ -26,7 +26,19 @@ namespace DreamMod.Common
             return 1 + c3 * MathF.Pow(x - 1, 3) + c1 * MathF.Pow(x - 1, 2);
 
         }
+                
+        public static float EaseInBack(float x) {
+            const float c1 = 1.70158f;
+            const float c3 = c1 + 1;
 
+            return c3 * x * x * x - c1 * x * x;
+        }
+
+        public static float EaseOutExpo(float x)
+        {
+        
+            return x == 1 ? 1 : 1 - MathF.Pow(2, -10 * x);
+        }
         public static DrawData[] DrawData_Spliting(DrawData data, int numberOfImages, float rotation, Color color, float offset)
         {
 
@@ -72,6 +84,6 @@ namespace DreamMod.Common
         {
             drawColor = new Color((zDepthHolder.zDepth) * (drawColor.R /255f),(zDepthHolder.zDepth) * (drawColor.G /255f),(zDepthHolder.zDepth) * (drawColor.B /255f),1);
         }
-        public static void ApplyZDepthScale(this IZDepth zDepthHolder, ref Vector2 scale) => scale *= new Vector2(MathHelper.Clamp(MathHelper.Lerp(0.0f,1f,zDepthHolder.zDepth),0,1));
+        public static void ApplyZDepthScale(this IZDepth zDepthHolder, ref Vector2 scale) => scale *= new Vector2(MathHelper.Clamp(MathHelper.Lerp(0.0f,1f,(zDepthHolder.zDepth)),0,1));
     }
 }

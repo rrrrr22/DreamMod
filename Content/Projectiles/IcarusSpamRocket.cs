@@ -71,6 +71,8 @@ namespace DreamMod.Content.Projectiles
             PunchCameraModifier p = new(Projectile.Center,Main.rand.NextVector2Circular(1,1),5,3,5,100000);
             Main.instance.CameraModifiers.Add(p);
             Projectile.NewProjectile(Projectile.GetSource_Death(),Projectile.Center,Vector2.Zero,ModContent.ProjectileType<IcarusFlame>(),50,0);
+            if(Main.rand.NextBool(5))
+            SoundEngine.PlaySound(SoundID.DD2_ExplosiveTrapExplode with { Pitch = 1},Projectile.Center);
 
         }
 

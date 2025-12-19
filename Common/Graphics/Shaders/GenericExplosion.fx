@@ -52,36 +52,26 @@ float easeBack(float x)
   : (pow(2 * x - 2, 2) * ((c2 + 1) * (x * 2 - 2) + c2) + 2) / 2;
 }
 
-float4 IcarusFlames(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 position : SV_Position) : COLOR0
+float4 GenericExplosion(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 position : SV_Position) : COLOR0
 {
     float2 uv = coords * 2. - 1.;
     uv = Rotate(uv, shaderData.x);
     float MAXTIMELEFT = 180;
-    float timeleft = shaderData.y;
-    float progress = lerp(1, 3, ((timeleft - 170.) / (MAXTIMELEFT - 160.)));
-    float progressAlpha = lerp(1 * progress, 1, (timeleft - 170.) / (MAXTIMELEFT - 160.));
+    float timeleft = shaderData.z;
+    float progress = lerp(0, 1, ((timeleft - 170.) / (MAXTIMELEFT - 160.)));
+    float progressAlpha = shaderData.w;
 
     float dest = distance(float2(0.5 * 2.0 - 1.0, 0.5 * 2.0 - 1.0), uv);
     float d = length(uv);
     float2 polar = float2(atan2(uv.y, uv.x) / (3.1415 * 0.5), dest);
-    float4 explosion = tex2D(image1, polar * .25 - (time + shaderData.x * 300) * .25);
-    explosion.a -= polar.y;
-    explosion += 1/d * .025;
-    explosion.rgb *= lerp(colors[1],colors[0],explosion.r);
-    float4 core = 1 / d * 0.1f * float4(colors[0],1);
-    explosion *= smoothstep(1,0,d);
-    explosion += core;
-    float4 actualExplosion = step(d * progress, 1) * smoothstep(0, 1 * (1 / d), d * progressAlpha) * step(d, 1) * progressAlpha;
-    actualExplosion.rgb *= lerp(colors[1], float3(0,0,0), actualExplosion.r) * ((tex2D(image1, polar + time).r * smoothstep(0, 1 * (1 / d), d * progressAlpha) * 45));
-    explosion *= smoothstep(1,0,d);
-    return explosion;
+    return (tex2D(image1, polar - time) * float4(colors[0], 1) * smoothstep(0, 1, d) * step(clamp(d - progress, 0, 1), 1) * step(d, 1) + float4(colors[0], 1) * smoothstep(0.8, .9, d) * step(d, 1)) * lerp(5,0,progressAlpha);
 }
     
 technique Technique1
 {
-    pass IcarusFlames
+    pass GenericExplosion
     {
         
-        PixelShader = compile ps_3_0 IcarusFlames();
+        PixelShader = compile ps_3_0 GenericExplosion();
     }
 }
