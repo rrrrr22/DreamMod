@@ -171,7 +171,23 @@ namespace DreamMod.Content.Npcs
 
             Main.pixelShader.CurrentTechnique.Passes[0].Apply();
         }
-
+        public override void PostOnSpawn(IEntitySource source)
+        {
+            spawnPosition = NPC.Center;
+            spawnRotation = NPC.rotation;
+        }
+        private static VertexRectangle muzzleFlash = new();
+        public Vector2 spawnPosition = Vector2.Zero;
+        public float spawnRotation = 0;
+        public void PostNPCDrawVFX()
+        {
+        
+            ModdedShaderHandler shader = EffectsLoader.shaderHandlers["IcarusMuzzleFlash"];
+            shader.setProperties([Color.White.ToVector3(),Color.White.ToVector3(),Color.White.ToVector3()],TextureAssets.Extra[193].Value);
+            shader.apply();
+            muzzleFlash.Draw(spawnPosition - Main.screenPosition,Color.White,new Vector2(128,32),spawnRotation,spawnPosition - Main.screenPosition,64);
+        
+        }
         public void DrawVFX(DrawData mainSprite, SpriteBatch spriteBatch)
         {
             if (NPC.velocity.Length() > 0)

@@ -1,5 +1,6 @@
 ﻿using DreamMod.Common.Graphics;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -90,6 +91,10 @@ namespace DreamMod.Common.Systems
             AIState state = (AIState)AIStates[type].MemberwiseClone();
             state.NPC = npc;
             return state;
+        }
+        public virtual void StateDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
+        {
+        
         }
         public float zDepth
         {

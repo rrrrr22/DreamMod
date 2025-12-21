@@ -1,4 +1,7 @@
-﻿using Microsoft.Xna.Framework;
+﻿using DreamMod.Common;
+using DreamMod.Common.Graphics;
+using DreamMod.Common.Graphics.Primitives;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Origins;
 using Origins.Items.Weapons.Ammo;
@@ -24,6 +27,7 @@ namespace DreamMod.Content.Projectiles
         {
         }
         public int MaxTimeLeft = 150;
+
         public override string Texture => "Terraria/Images/Projectile_"+ProjectileID.RocketI;
         public override void SetDefaults()
         {
@@ -33,14 +37,14 @@ namespace DreamMod.Content.Projectiles
             Projectile.friendly = false;
             Projectile.tileCollide = true;
             Projectile.timeLeft = 30 + Main.rand.Next(0,60);
-            
+
         }
         public ref float target => ref Projectile.ai[0];
         public override void AI()
         {
             base.AI();
             Projectile.velocity = Projectile.rotation.ToRotationVector2() * Projectile.ai[1];
-            
+
             if(target != -1)
             {
                 Player player = Main.player[(int)target];
@@ -60,8 +64,14 @@ namespace DreamMod.Content.Projectiles
         {
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Texture2D dingStar = Mod.Assets.Request<Texture2D>("Assets/Textures/VFX/DingStar").Value;
+            
+
+            Main.pixelShader.CurrentTechnique.Passes[0].Apply();
+
             Main.EntitySpriteDraw(texture,Projectile.Center - Main.screenPosition,null,Color.White,Projectile.velocity.ToRotation() + MathHelper.PiOver2,texture.Size() / 2f, 1f, SpriteEffects.None);
             Main.EntitySpriteDraw(dingStar,Projectile.Center - Main.screenPosition,null,Color.White,Projectile.velocity.ToRotation() + MathHelper.PiOver2,dingStar.Size() / 2f,MathF.Sin(Projectile.timeLeft * 0.2f) * 0.1f + .1f, SpriteEffects.None);
+
+
 
             return false;
         }

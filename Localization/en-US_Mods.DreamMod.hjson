@@ -17,4 +17,5 @@ NPCs.IcarusBoss.DisplayName: Icarus Boss
 Projectiles: {
 	IcarusSpamRocket.DisplayName: Icarus Spam Rocket
 	IcarusFlame.DisplayName: Icarus Flame
+	IcarusOrb.DisplayName: Icarus Orb
 }

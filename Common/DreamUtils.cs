@@ -18,16 +18,18 @@ namespace DreamMod.Common
 {
     public static class DreamUtils
     {
-        
-        public static float EaseOutBack(float x) {
+
+        public static float EaseOutBack(float x)
+        {
             const float c1 = 1.70158f;
             const float c3 = c1 + 1;
 
             return 1 + c3 * MathF.Pow(x - 1, 3) + c1 * MathF.Pow(x - 1, 2);
 
         }
-                
-        public static float EaseInBack(float x) {
+
+        public static float EaseInBack(float x)
+        {
             const float c1 = 1.70158f;
             const float c3 = c1 + 1;
 
@@ -36,54 +38,59 @@ namespace DreamMod.Common
 
         public static float EaseOutExpo(float x)
         {
-        
+
             return x == 1 ? 1 : 1 - MathF.Pow(2, -10 * x);
         }
         public static DrawData[] DrawData_Spliting(DrawData data, int numberOfImages, float rotation, Color color, float offset)
         {
 
             var datas = new DrawData[numberOfImages];
-            for(int i = 0; i < numberOfImages; i++)
+            for (int i = 0; i < numberOfImages; i++)
             {
-                var newPosition = data.position + new Vector2(1,0).RotatedBy((float)i/numberOfImages * MathHelper.TwoPi + rotation);
+                var newPosition = data.position + new Vector2(1, 0).RotatedBy((float)i / numberOfImages * MathHelper.TwoPi + rotation);
                 datas[i] = data.CopyAndChangeDrawDataValues(positionData: newPosition + data.position.DirectionTo(newPosition) * offset, colorData: color);
 
             }
-            
+
             return datas;
         }
 
         public static DrawData CopyAndChangeDrawDataValues(this DrawData data, Texture2D textureData = null, Vector2? positionData = null, Color? colorData = null, Rectangle? destinationRectData = null, Rectangle? sourceRectData = null, float? rotationData = null, Vector2? originData = null, Vector2? scaleData = null, SpriteEffects? spriteEffectsData = null)
-        {   
-           return new(textureData?? data.texture, positionData?? data.position,sourceRectData?? data.sourceRect, colorData?? data.color,rotationData?? data.rotation, originData?? data.origin, scaleData?? data.scale, spriteEffectsData?? data.effect);
+        {
+            return new(textureData ?? data.texture, positionData ?? data.position, sourceRectData ?? data.sourceRect, colorData ?? data.color, rotationData ?? data.rotation, originData ?? data.origin, scaleData ?? data.scale, spriteEffectsData ?? data.effect);
         }
 
         public static DrawData[] DrawData_AfterImage(DrawData data, int maxNumberOfImagesAtOnce, Color color, Vector2 directionAndLength, bool animate)
         {
-            
+
             var datas = new DrawData[maxNumberOfImagesAtOnce];
-            for(int i = 0; i < maxNumberOfImagesAtOnce; i++)
+            for (int i = 0; i < maxNumberOfImagesAtOnce; i++)
             {
-                float progress = (float)i/maxNumberOfImagesAtOnce;
+                float progress = (float)i / maxNumberOfImagesAtOnce;
                 var newPosition = Vector2.Zero;
-                if(animate)
-                    newPosition = Vector2.Lerp(data.position + directionAndLength,data.position, progress);
+                if (animate)
+                    newPosition = Vector2.Lerp(data.position + directionAndLength, data.position, progress);
                 else
-                    newPosition = Vector2.Lerp(data.position + Vector2.Lerp(Vector2.Zero,directionAndLength,progress * (float)Main.timeForVisualEffects % 1),data.position, progress);
+                    newPosition = Vector2.Lerp(data.position + Vector2.Lerp(Vector2.Zero, directionAndLength, progress * (float)Main.timeForVisualEffects % 1), data.position, progress);
                 datas[i] = data.CopyAndChangeDrawDataValues(positionData: newPosition, colorData: color * progress);
 
             }
             return datas;
         }
+        public static void Push<T>(this T[] array, T value)
+        {
+            Array.Copy(array, 0, array, 1, array.Length - 1);
+            array[0] = value;
+        }
         // if max = 60, starting = 30,current = 45, then finalValue = (45-15) / (60 - 30) = 0.5 
-        public static float PortionOfTimerAsProgress(float timer, float startingDurationValue, float maxDurationValue)
+        public static float PortionOfTimerAsProgress(float startingDurationValue, float maxDurationValue)
         {
-            return MathHelper.Lerp(0,1,(startingDurationValue - timer) / (maxDurationValue - startingDurationValue));
+            return MathHelper.Clamp(MathHelper.Lerp(0, 1, (startingDurationValue) / (maxDurationValue)), 0, 1);
         }
-        public static void ApplyZDepthColor(this IZDepth zDepthHolder, ref Color drawColor) 
+        public static void ApplyZDepthColor(this IZDepth zDepthHolder, ref Color drawColor)
         {
-            drawColor = new Color((zDepthHolder.zDepth) * (drawColor.R /255f),(zDepthHolder.zDepth) * (drawColor.G /255f),(zDepthHolder.zDepth) * (drawColor.B /255f),1);
+            drawColor = new Color((zDepthHolder.zDepth) * (drawColor.R / 255f), (zDepthHolder.zDepth) * (drawColor.G / 255f), (zDepthHolder.zDepth) * (drawColor.B / 255f), 1);
         }
-        public static void ApplyZDepthScale(this IZDepth zDepthHolder, ref Vector2 scale) => scale *= new Vector2(MathHelper.Clamp(MathHelper.Lerp(0.0f,1f,(zDepthHolder.zDepth)),0,1));
+        public static void ApplyZDepthScale(this IZDepth zDepthHolder, ref Vector2 scale) => scale *= new Vector2(MathHelper.Clamp(MathHelper.Lerp(0.0f, 1f, (zDepthHolder.zDepth)), 0, 1));
     }
 }
