@@ -137,7 +137,8 @@ float4 Cosmic(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 pos
     aura.a *= aura.r * 15;
     aura.rgb *= 0.1;
     
-    return lerp(lerp(lerp(float4(0, 0, 0, 2), aura * float4(coords.yxx,1) * 2, aura.r), finalCol, finalCol), space, space);
+    //unused blackhole here , i dont want swiss cheese in my cosmic dimension...
+    return lerp(lerp(lerp(float4(0, 0, 0, 2), aura * float4(coords.yxx,1) * 2, aura.r), finalCol, 0), space, space);
 }
     
 technique Technique1
