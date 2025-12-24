@@ -63,7 +63,7 @@ float2 random(float2 p)
     return float2(x,y) - .5;
 }
 
-float4 layer(float2 uv, float l)
+float4 layer(float2 uv, float l, float s)
 {
     float4 layer = float4(0,0,0,0);
     float2 gridUV = frac(uv * 8) - .5;
@@ -74,10 +74,10 @@ float4 layer(float2 uv, float l)
         {
             float2 offset = float2(x, y);
             float2 rv = random(gridID + offset + l);
-            float size = saturate((sin(time * 5 * rv.x)) * rv.y * .5) + .05;
+            float size = saturate((sin(time * 5 * rv.x)) * rv.y * .5) + s;
             float d = length(gridUV - offset - rv);
-            layer += star(gridUV - offset - rv, rv.y * 0.5) * size * float4(rv.x * 7., rv.x * 6, rv.y * 8, 0) * smoothstep(1,0,d);
-            
+            layer += star(gridUV - offset - rv, rv.y * 0.5) * size * float4(cos(length(rv * 20) * float3(5, 2, 10)), 0) * smoothstep(1, 0, d);
+
         }
     
     }
@@ -121,21 +121,24 @@ float4 Cosmic(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 pos
     float2 starUV1 = coords - float2(lerp(1, 0, screenPosition.x / 500 / 16), lerp(1, 0, screenPosition.y / 500 / 16));
     float2 starUV2 = coords - float2(lerp(1, 0, screenPosition.x / 500 / 24), lerp(1, 0, screenPosition.y / 500 / 24));
     float2 starUV3 = coords - float2(lerp(1, 0, screenPosition.x / 500 / 32), lerp(1, 0, screenPosition.y / 500 / 32));
-    space += layer(starUV1,.2);
-    space += layer(starUV2,.4);
-    space += layer(starUV3,.6);
+
+    for (float i = 0; i < 25; i += 1)
+    {
+        float2 starUV = round(coords * 1024) / 1024 - float2(lerp(1, 0, screenPosition.x / 500 / 16), lerp(1, 0, screenPosition.y / 500 / (16 * i + 16)));
+        space += layer(starUV, i, i / 1000);
+
+    }
+    
     
     //finally, the aura thingy
     
-    float4 aura = tex2D(image1, starUV1 + .6);
-    aura.a *= aura.r * 15;
-
-    aura += tex2D(image1, starUV2 + .4);
-    aura.a *= aura.r * 15;
+    float4 aura = tex2D(image1, float2(starUV3)
+    + time
+    + .6);
 
     aura += tex2D(image1, starUV3 + .2);
-    aura.a *= aura.r * 15;
-    aura.rgb *= 0.1;
+    aura.a *= float3(cos(length(starUV1 * 20) * float3(5, 2, 10)));
+    aura.rgb *= 0.25;
     
     //unused blackhole here , i dont want swiss cheese in my cosmic dimension...
     return lerp(lerp(lerp(float4(0, 0, 0, 2), aura * float4(coords.yxx,1) * 2, aura.r), finalCol, 0), space, space);

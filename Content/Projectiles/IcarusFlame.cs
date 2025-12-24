@@ -32,8 +32,8 @@ namespace DreamMod.Content.Projectiles
         public override bool PreDraw(ref Color lightColor)
         {
 
-            Main.spriteBatch.End();
-			Main.spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Additive, SamplerState.LinearClamp, DepthStencilState.Default, RasterizerState.CullNone, null, Main.GameViewMatrix.ZoomMatrix);
+            //Main.spriteBatch.End();
+			//Main.spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Additive, SamplerState.LinearClamp, DepthStencilState.Default, RasterizerState.CullNone, null, Main.GameViewMatrix.ZoomMatrix);
             float explosionAlpha = MathHelper.Lerp(1,0,MathHelper.Clamp((float)(Projectile.timeLeft - 150) / 30,0,1));
 
             ModdedShaderHandler shader = EffectsLoader.shaderHandlers["IcarusFlames"];
@@ -51,8 +51,8 @@ namespace DreamMod.Content.Projectiles
         public override void PostDraw(Color lightColor)
         {
             
-            Main.spriteBatch.End();
-    		Main.spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, Main.DefaultSamplerState, DepthStencilState.None, RasterizerState.CullCounterClockwise, null, Main.GameViewMatrix.TransformationMatrix);
+            //Main.spriteBatch.End();
+    		//Main.spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, Main.DefaultSamplerState, DepthStencilState.None, RasterizerState.CullCounterClockwise, null, Main.GameViewMatrix.TransformationMatrix);
 
         }
 

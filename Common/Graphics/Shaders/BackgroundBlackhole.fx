@@ -32,6 +32,22 @@ float2 Rotate(float2 uv, float amount)
     return uv2;
     
 }
+float sdCylinder(float3 p, float3 a, float3 b, float r)
+{
+    float3 ba = b - a;
+    float3 pa = p - a;
+    float baba = dot(ba, ba);
+    float paba = dot(pa, ba);
+    float x = length(pa * baba - ba * paba) - r * baba;
+    float y = abs(paba - baba * 0.5) - baba * 0.5;
+    float x2 = x * x;
+    float y2 = y * y * baba;
+    
+    float d = (max(x, y) < 0.0) ? -min(x2, y2) : (((x > 0.0) ? x2 : 0.0) + ((y > 0.0) ? y2 : 0.0));
+    
+    return sign(d) * sqrt(abs(d)) / baba;
+}
+
 float sdVesica(float2 p, float w, float h)
 {
     float3 d = 0.5 * (w * w - h * h) / h;
@@ -41,9 +57,7 @@ float sdVesica(float2 p, float w, float h)
 }
 float sdCone(float3 p, float2 c, float h)
 {
-  // c is the sin/cos of the angle, h is height
-  // Alternatively pass q instead of (c,h),
-  // which is the point at the base in 2D
+
     float2 q = h * float2(c.x / c.y, -1.0);
     
     float2 w = float2(length(p.xz), p.y);
@@ -59,6 +73,18 @@ float3 Rotate(float3 p, float3 axis, float angle)
     return lerp(dot(axis, p) * axis, p, cos(angle)) + cross(axis, p) * sin(angle);
 }
 
+float star(float2 uv, float flare)
+{
+    float d = length(uv);
+    float m = .05 / d;
+    
+    float rays = max(0, 1 - abs(uv.x * uv.y * 255));
+    m += rays * flare;
+    uv *= Rotate(uv, 3.1415 / 4.);
+    rays = max(0, 1 - abs(uv.x * uv.y * 255));
+    m += rays * .3 * flare;
+    return m;
+}
 float2 random(float2 p)
 {
     p = frac(p * float2(123.34, 456.21));
@@ -66,6 +92,27 @@ float2 random(float2 p)
     float x = frac(p.x * 125.63);
     float y = frac(p.y * 735.32);
     return float2(x, y) - .5;
+}
+
+float4 layer(float2 uv, float l)
+{
+    float4 layer = float4(0, 0, 0, 0);
+    float2 gridUV = frac(uv * 8) - .5;
+    float2 gridID = floor(uv * 8) - .5;
+    for (float y = -1; y <= 1.; y++)
+    {
+        for (float x = -1; x <= 1.; x++)
+        {
+            float2 offset = float2(x, y);
+            float2 rv = random(gridID + offset + l);
+            float size = saturate((sin(time * 5 * rv.x)) * rv.y * .5) + .05;
+            float d = length(gridUV - offset - rv);
+            layer += star(gridUV - offset - rv, rv.y * 0.5) * size * float4(rv.x * 7., rv.x * 6, rv.y * 8, 0) * smoothstep(1, 0, d);
+
+        }
+    
+    }
+    return layer;
 }
 
 float sdSphere(float3 p, float s)
@@ -116,37 +163,34 @@ float3 mutliLerp(float3 value1, float3 value2, float3 value3, float t)
     return value;
 
 }
-float map(float3 p, out int ID, int exclude)
+float map(float3 p, out int ID, int exclude, out float3 lastP)
 {
-    //p = rotateX(p, -3.1415 / 2 * 1.25);
-    //p = rotateZ(p, 3.1415);
 
+    p = Rotate(p, float3(1, 0, 0), 3.1415);
+    p = Rotate(p, float3(0, 0, 1), 3.1415 / 2 * .64);
+    p = Rotate(p, float3(1, 0, 0), 3.1415 / 2 * .25);
     
-    //p = Rotate(p, float3(0,0,1),3.1415);
-    //p = Rotate(p, float3(0,1,0),3.1415 *1);
-    p = Rotate(p, float3(1, 0, 0), 3.1415 * 1);
-    float plane = sdPlane(p, normalize(float3(1, 1, 1)),
-    1);
-    p = Rotate(p, float3(0, 1, 0), 3.1415 / 2);
-    p = Rotate(p, float3(0, 0, 1), 3.1415 / 2);
-
-    float plane2 = sdPlane(p, normalize(float3(1, 1, 1)), 1);
+    //float plane = sdPlane(p, normalize(float3(0, 0, .25)),2);
+    float plane = sdSphere(p,5);
+    
+    //p = Rotate(p, float3(1, 0, 0), 3.1415 / 2 * -1);
+    //p = Rotate(p, float3(0, 1, 0), 3.1415);
+    //float plane2 = sdCylinder(p, float3(0, 0, 0), float3(-10,0,10),0.25);
 
     float d = plane;
-    d = min(d, plane2);
     if (d == plane)
     {
         ID = 0;
     }
-    else if (d == plane2)
+    else if (d == 1)
     {
         ID = 1;
     }
     else
         ID = 69;
        
-
-    return d;
+    lastP = p;
+    return (d);
 }
 
 float map2(float3 p)
@@ -160,45 +204,70 @@ float map2(float3 p)
 
 float4 Blackhole(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 position : SV_Position) : COLOR0
 {
-    float2 uv = (coords + float2(0.1, .1)) * 2. - 1;
-    float3 rayOrigin = float3(0, 0, -2);
-    float3 rayDir = normalize(float3(uv.x * 3, uv.y * 3, 1));
+    float2 uv = (coords + float2(-0.2, -.5) + screenPosition / 500/ 16) * 2. - 1;
+    float3 rayOrigin = float3(0, 0, -20);
+    float3 rayDir = normalize(float3(uv.x, uv.y, 1));
     float t = 0;
     float3 col = float3(0, 0, 0);
     float3 p = rayOrigin + rayDir * t;
     int ID = 0;
     float lastD = -1;
+    float3 lastP = 0;
     //raymarching
-    for (int i = 0; i < 25; i++)
+    for (int i = 0; i < 50; i++)
     {
         p = rayOrigin + rayDir * t;
-        float d = map(p, ID, 0);
+        float d = map(p, ID, 0, lastP);
         t += d;
 
-
     }
-    float2 polar = float2(atan2(p.y, p.x) / (3.1415 / 2) * 1, length(p.xy));
+    p = lastP;
+    float2 polar = float2(atan2(p.y, p.x) / (3.1415 / 2) + length(p), length(p.xy));
     float2 polar2 = float2(atan2(p.y, p.x) / (3.1415 / 2) * 2, length(p.xy)) * .5;
     float2 polar3 = float2(atan2(p.y, p.x) / (3.1415 / 2) * 4, length(p.xy)) * .25;
     switch (ID)
     {
         case 0:
-    
-            col = tex2D(image1, polar * .25 + time * 2);
-            col += 1 / polar.y;
-            col *= tex2D(image1, polar2 * 2 + time * 1.5).r;
-            col *= tex2D(image1, polar3 * 2 + time * 1.25).r;
-            col *= smoothstep(2.25, 0, polar.y);
             
+            float directions = 32;
+            float angle = atan2(p.y, p.x) / (3.1415 / 2);
+            float d = length(p.xy);
+            float2 VortexUV = float2(sin(angle + d - time * 1), d + time * 0.03);
+
+            
+            float3 eye = tex2D(image1, VortexUV);
+            float3 eyeMask = tex2D(image1, VortexUV - time * 5);
+           // eye *= eyeMask.r;
+            eye += 1 / polar.y;
+
+            eye *= smoothstep(1, 0, 1 / length(p) * 4) * (1 / length(p)*50);
+            //le color
+            eye *= (cos((polar.y) / (1.0 + t) + time + float3(6, 1, 2))
+            + 1.3) / t * 5;
+
             //col = sdVesica(p.xy,1,1).xxx;
             //col = tex2D(image1, p.xy + time);
+            float3 eyeOfTheAbyss = tex2D(image1, (VortexUV.xy + time * 2));
+            float3 eyeOfTheAbyssMask = tex2D(image1, (VortexUV.xy - time * 7) * .1).r;
+            float circleMult = smoothstep(smoothstep(3, 0, 1 / length(p)) * 100,
+            1, 1 / length(p));
+            col = eye;
 
-            break;
+            col += tex2D(image1, polar + float2(screenPosition / 500 /16) + time * 0.25) * (cos((length(p) / .1) / (1.0 + t) + time + float3(6, 1, 2))
+            + 1.3) / t * (smoothstep(4, 0, length(p + float2(screenPosition / 500 / 16)))) * tex2D(image1, uv + float2(screenPosition / 500 / 16) * 2.25
+            - time * 0.25).
+            r;
+             
+            col -= star(p.xy / 10, 2 * (1 - sin(time * 25) * .5)) * smoothstep(1, 0, length(p.xy));
+            col *= smoothstep(1, 0, length(p.xy) / 20);
+            col *= 2;
+                break;
             
         case 1:
-            col += abs(1 / p.x);
-            col *= smoothstep(2.25, 0, abs(p.x));
+            col += abs(1/lastP.x) * .1;
             col *= tex2D(image1, Rotate(polar, 3.1415 / 2) + float2(time, 0)).r;
+            
+            //col *= tex2D(image1, Rotate(polar, 3.1415 / 2) + float2(time, 0)).r;
 
             break;
             
@@ -209,11 +278,11 @@ float4 Blackhole(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 
     
     
     //aura
-    
+
     //col += tex2D(image2, uv).r;
     
     // clear the bg and only draw the shape at full brightness
-    return float4(col, 1);
+    return float4(col, 10/t);
 }
     
 technique Technique1
