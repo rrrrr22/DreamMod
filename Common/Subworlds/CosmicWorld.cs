@@ -180,19 +180,19 @@ namespace DreamMod.Common.Subworlds
         public override bool PreDrawCloseBackground(SpriteBatch spriteBatch)
         {
 
-            //ModdedShaderHandler shader = EffectsLoader.shaderHandlers["CosmicBackground"];
+            ModdedShaderHandler shader = EffectsLoader.shaderHandlers["CosmicBackground"];
 
-            //shader.setProperties([Color.Orange.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value, shaderData: new Vector4(0, 0, 0, 0));
-            //shader.apply();
+            shader.setProperties([Color.Orange.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value, shaderData: new Vector4(0, 0, 0, 0));
+            shader.apply();
 
-            //rect.Draw(Main.Camera.Center - Main.screenPosition, Color.White, size: Main.ScreenSize.ToVector2(), rotationCenter: Main.LocalPlayer.Center);
+            rect.Draw(Main.Camera.Center - Main.screenPosition, Color.White, size: Main.ScreenSize.ToVector2(), rotationCenter: Main.LocalPlayer.Center);
 
-            //shader = EffectsLoader.shaderHandlers["BackgroundBlackhole"];
+            shader = EffectsLoader.shaderHandlers["BackgroundBlackhole"];
 
-            //shader.setProperties([Color.Goldenrod.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value, shaderData: new Vector4(0, 0, 0, 0));
-            //shader.apply();
+            shader.setProperties([Color.Goldenrod.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value,TextureAssets.Extra[ExtrasID.FlameLashTrailShape].Value, shaderData: new Vector4(0, 0, 0, 0));
+            shader.apply();
 
-            //rect.Draw(Main.Camera.Center - Main.screenPosition, Color.White, size: Main.ScreenSize.ToVector2(), rotationCenter: Main.LocalPlayer.Center);
+            rect.Draw(Main.Camera.Center - Main.screenPosition, Color.White, size: Main.ScreenSize.ToVector2(), rotationCenter: Main.LocalPlayer.Center);
 
             return false;
         }

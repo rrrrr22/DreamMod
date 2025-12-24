@@ -32,28 +32,33 @@ float2 Rotate(float2 uv, float amount)
     return uv2;
     
 }
-float2 expandInsideOutside(float2 uv)
+float sdVesica(float2 p, float w, float h)
 {
-    float1 t = time + shaderData.w;
-    float2 uv2 = Rotate(uv, t);
-    float1 d = length(uv2);
-
-    return (d * uv2 + ((t) - uv2));
+    float3 d = 0.5 * (w * w - h * h) / h;
+    p = abs(p);
+    float3 c = (w * p.y < d * (p.x - w)) ? float3(0.0, w, 0.0) : float3(-d.x, 0.0, (d.x) + h);
+    return length(p - c.yx) - c.z;
+}
+float sdCone(float3 p, float2 c, float h)
+{
+  // c is the sin/cos of the angle, h is height
+  // Alternatively pass q instead of (c,h),
+  // which is the point at the base in 2D
+    float2 q = h * float2(c.x / c.y, -1.0);
     
+    float2 w = float2(length(p.xz), p.y);
+    float2 a = w - q * clamp(dot(w, q) / dot(q, q), 0.0, 1.0);
+    float2 b = w - q * float2(clamp(w.x / q.x, 0.0, 1.0), 1.0);
+    float k = sign(q.y);
+    float d = min(dot(a, a), dot(b, b));
+    float s = max(k * (w.x * q.y - w.y * q.x), k * (w.y - q.y));
+    return sqrt(d) * sign(s);
+}
+float3 Rotate(float3 p, float3 axis, float angle)
+{
+    return lerp(dot(axis, p) * axis, p, cos(angle)) + cross(axis, p) * sin(angle);
 }
 
-float star(float2 uv, float flare)
-{
-    float d = length(uv);
-    float m = .05 / d;
-    
-    float rays = max(0, 1 - abs(uv.x * uv.y * 255));
-    m += rays * flare;
-    uv *= Rotate(uv, 3.1415 / 4.);
-    rays = max(0, 1 - abs(uv.x * uv.y * 255));
-    m += rays * .3 * flare;
-    return m;
-}
 float2 random(float2 p)
 {
     p = frac(p * float2(123.34, 456.21));
@@ -63,26 +68,6 @@ float2 random(float2 p)
     return float2(x, y) - .5;
 }
 
-float4 layer(float2 uv, float l)
-{
-    float4 layer = float4(0, 0, 0, 0);
-    float2 gridUV = frac(uv * 8) - .5;
-    float2 gridID = floor(uv * 8) - .5;
-    for (float y = -1; y <= 1.; y++)
-    {
-        for (float x = -1; x <= 1.; x++)
-        {
-            float2 offset = float2(x, y);
-            float2 rv = random(gridID + offset + l);
-            float size = saturate((sin(time * 5 * rv.x)) * rv.y * .5) + .05;
-            float d = length(gridUV - offset - rv);
-            layer += star(gridUV - offset - rv, rv.y * 0.5) * size * float4(rv.x * 7., rv.x * 6, rv.y * 8, 0) * smoothstep(1, 0, d);
-            
-        }
-    
-    }
-    return layer;
-}
 float sdSphere(float3 p, float s)
 {
     return (length(p) - s);
@@ -115,9 +100,9 @@ float3 rotateX(float3 p, float angle)
 
 }
 
-float mutliLerp(float value1, float value2, float value3, float t)
+float3 mutliLerp(float3 value1, float3 value2, float3 value3, float t)
 {
-    float value = 0;
+    float3 value = 0;
     if (t < 0.5)
     {
         value = lerp(value1, value2, (t) * 2);
@@ -131,14 +116,37 @@ float mutliLerp(float value1, float value2, float value3, float t)
     return value;
 
 }
-float map(float3 p)
+float map(float3 p, out int ID, int exclude)
 {
     //p = rotateX(p, -3.1415 / 2 * 1.25);
     //p = rotateZ(p, 3.1415);
+
     
-    float plane = sdPlane(p, normalize(float3(sin(time) + 3, sin(time) + 3, sin(time)+3)), normalize(10));
-    float blacksphere = sdSphere(p + float3(0, 0, 1), .1);
-    return plane;
+    //p = Rotate(p, float3(0,0,1),3.1415);
+    //p = Rotate(p, float3(0,1,0),3.1415 *1);
+    p = Rotate(p, float3(1, 0, 0), 3.1415 * 1);
+    float plane = sdPlane(p, normalize(float3(1, 1, 1)),
+    1);
+    p = Rotate(p, float3(0, 1, 0), 3.1415 / 2);
+    p = Rotate(p, float3(0, 0, 1), 3.1415 / 2);
+
+    float plane2 = sdPlane(p, normalize(float3(1, 1, 1)), 1);
+
+    float d = plane;
+    d = min(d, plane2);
+    if (d == plane)
+    {
+        ID = 0;
+    }
+    else if (d == plane2)
+    {
+        ID = 1;
+    }
+    else
+        ID = 69;
+       
+
+    return d;
 }
 
 float map2(float3 p)
@@ -147,40 +155,65 @@ float map2(float3 p)
 
 }
 
-float3 normal(float3 p, float s)
-{
 
-    float2 off = float2(s, 0);
-    float3 n = float3(map(p + off.xyy).x, map(p + off.yxy).x, map(p + off.xyy).x) -
-    float3(map(p - off.xyy).x, map(p - off.yxy).x, map(p - off.xyy).x);
-    return normalize(n);
-
-}
 
 
 float4 Blackhole(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 position : SV_Position) : COLOR0
 {
-    float2 uv = (coords) * 2. - 1;
-    float3 rayOrigin = float3(0, 0, -10);
-    float3 rayDir = normalize(float3(uv.x, uv.y, 1));
+    float2 uv = (coords + float2(0.1, .1)) * 2. - 1;
+    float3 rayOrigin = float3(0, 0, -2);
+    float3 rayDir = normalize(float3(uv.x * 3, uv.y * 3, 1));
     float t = 0;
     float3 col = float3(0, 0, 0);
-
+    float3 p = rayOrigin + rayDir * t;
+    int ID = 0;
+    float lastD = -1;
     //raymarching
-    for (int i = 0; i < 125; i++)
+    for (int i = 0; i < 25; i++)
     {
-        float3 p = rayOrigin + rayDir * t;
-        float d = map(p);
+        p = rayOrigin + rayDir * t;
+        float d = map(p, ID, 0);
         t += d;
-        
-        //polar
-        float dest = distance(float2(0.5 * 2.0 - 1.0, 0.5 * 2.0 - 1.0), p);
-        float angle = atan2(p.y, p.x) / (3.1415 * 0.5);
-        float2 polarUV = float2(angle, dest);
-        col = t;
+
+
     }
+    float2 polar = float2(atan2(p.y, p.x) / (3.1415 / 2) * 1, length(p.xy));
+    float2 polar2 = float2(atan2(p.y, p.x) / (3.1415 / 2) * 2, length(p.xy)) * .5;
+    float2 polar3 = float2(atan2(p.y, p.x) / (3.1415 / 2) * 4, length(p.xy)) * .25;
+    switch (ID)
+    {
+        case 0:
+    
+            col = tex2D(image1, polar * .25 + time * 2);
+            col += 1 / polar.y;
+            col *= tex2D(image1, polar2 * 2 + time * 1.5).r;
+            col *= tex2D(image1, polar3 * 2 + time * 1.25).r;
+            col *= smoothstep(2.25, 0, polar.y);
+            
+            //col = sdVesica(p.xy,1,1).xxx;
+            //col = tex2D(image1, p.xy + time);
+
+            break;
+            
+        case 1:
+            col += abs(1 / p.x);
+            col *= smoothstep(2.25, 0, abs(p.x));
+            col *= tex2D(image1, Rotate(polar, 3.1415 / 2) + float2(time, 0)).r;
+
+            break;
+            
+        default:
+
+            break;
+    }
+    
+    
+    //aura
+    
+    //col += tex2D(image2, uv).r;
+    
     // clear the bg and only draw the shape at full brightness
-    return float4(col, 1) * smoothstep(1, 0, t / 10);
+    return float4(col, 1);
 }
     
 technique Technique1
