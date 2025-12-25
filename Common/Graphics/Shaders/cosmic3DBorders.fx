@@ -165,19 +165,21 @@ float3 mutliLerp(float3 value1, float3 value2, float3 value3, float t)
 }
 float map(float3 p, out int ID, int exclude, out float3 lastP)
 {
+    float planeFront = 1000000000;
 
-    p = Rotate(p, float3(1, 0, 0), 3.1415);
+    p = Rotate(p, float3(1, 0, 0), 3.1415 / 2);
     //p = Rotate(p, float3(0, 0, 1), 3.1415 / 2 * .64);
     //p = Rotate(p, float3(1, 0, 0), 3.1415 / 2 * .25);
     
-    float plane = sdPlane(p, normalize(float3(0, 0, 1)),2);
-    //float plane = sdSphere(p,5);
+    float plane = sdPlane(p, normalize(float3(0, 0, 1)), p.y);
+    plane = sdSphere(p,5);
     
     //p = Rotate(p, float3(1, 0, 0), 3.1415 / 2 * -1);
     //p = Rotate(p, float3(0, 1, 0), 3.1415);
     //float plane2 = sdCylinder(p, float3(0, 0, 0), float3(-10,0,10),0.25);
 
     float d = plane;
+    d = min(d,planeFront);
     if (d == plane)
     {
         ID = 0;
@@ -202,10 +204,11 @@ float map2(float3 p)
 
 
 
-float4 Blackhole(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 position : SV_Position) : COLOR0
+float4 CosmicBoarder(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 position : SV_Position) : COLOR0
 {
-    float2 uv = (coords + float2(-0.2, -.5) + screenPosition / 500/ 16) * 2. - 1;
-    float3 rayOrigin = float3(0, 0, -20);
+    coords = coords / screenSize;
+    float2 uv = (coords + float2(0, 0) + screenPosition / 500 / 16 / float2(1,6)) * 2. - 1;
+    float3 rayOrigin = float3(0, 0, -11);
     float3 rayDir = normalize(float3(uv.x, uv.y, 1));
     float t = 0;
     float3 col = float3(0, 0, 0);
@@ -221,25 +224,33 @@ float4 Blackhole(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 
         t += d;
 
     }
-    p = lastP;
+    float alpha = 0;
     float2 polar = float2(atan2(p.y, p.x) / (3.1415 / 2) + length(p), length(p.xy));
     float2 polar2 = float2(atan2(p.y, p.x) / (3.1415 / 2) * 2, length(p.xy)) * .5;
     float2 polar3 = float2(atan2(p.y, p.x) / (3.1415 / 2) * 4, length(p.xy)) * .25;
     switch (ID)
     {
         case 0:
-                    
-        break;
+            float4 textureBoarder = tex2D(image1, p.xy * .1 + float2(time * .2, 0)) * smoothstep(1, 0, t / 30);
+            float textureBoarderMask = tex2D(image1, p.xy * .24 - float2(time * .2, 0)).r;
+            col = textureBoarder * textureBoarderMask;
+            alpha = col.r;
+            col *= float3(p.x,t / 3,.25 * t) * 0.25;
+            
+            return float4(col, alpha);
+
+          
             
         case 1:
-            col += abs(1/lastP.x) * .1;
-            col *= tex2D(image1, Rotate(polar, 3.1415 / 2) + float2(time, 0)).r;
-            
+            col = tex2D(image1, Rotate(p.xy, 3.1415 / 2) + float2(time, 0));
+            col *= smoothstep(1, 0, length(p));
             //col *= tex2D(image1, Rotate(polar, 3.1415 / 2) + float2(time, 0)).r;
+            return float4(col, alpha);
 
             break;
             
         default:
+            return float4(col, alpha);
 
             break;
     }
@@ -250,14 +261,13 @@ float4 Blackhole(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 
     //col += tex2D(image2, uv).r;
     
     // clear the bg and only draw the shape at full brightness
-    return float4(col, 10/t);
 }
     
 technique Technique1
 {
-    pass Blackhole
+    pass CosmicBoarder
     {
         
-        PixelShader = compile ps_3_0 Blackhole();
+        PixelShader = compile ps_3_0 CosmicBoarder();
     }
 }

@@ -3,6 +3,7 @@ using DreamMod.Common.Graphics.Primitives;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Origins;
+using ReLogic.Content;
 using SubworldLibrary;
 using System;
 using System.Collections.Generic;
@@ -168,6 +169,11 @@ namespace DreamMod.Common.Subworlds
     }
     public class CosmicWorldModSurfaceBackgroundStyle : ModSurfaceBackgroundStyle
     {
+        Asset<Texture2D> cosmicBG;
+        public override void Load()
+        {
+            cosmicBG = ModContent.Request<Texture2D>("DreamMod/Assets/Textures/Backgrounds/CosmicBG");
+        }
         public override void ModifyFarFades(float[] fades, float transitionSpeed)
         {
 
@@ -182,12 +188,19 @@ namespace DreamMod.Common.Subworlds
 
             ModdedShaderHandler shader = EffectsLoader.shaderHandlers["CosmicBackground"];
 
-            shader.setProperties([Color.Orange.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value, shaderData: new Vector4(0, 0, 0, 0));
+            shader.setProperties([Color.Orange.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value,cosmicBG.Value, shaderData: new Vector4(0, 0, 0, 0));
             shader.apply();
 
             rect.Draw(Main.Camera.Center - Main.screenPosition, Color.White, size: Main.ScreenSize.ToVector2(), rotationCenter: Main.LocalPlayer.Center);
 
             shader = EffectsLoader.shaderHandlers["BackgroundBlackhole"];
+
+            shader.setProperties([Color.Goldenrod.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value,TextureAssets.Extra[ExtrasID.FlameLashTrailShape].Value, shaderData: new Vector4(0, 0, 0, 0));
+            shader.apply();
+
+            rect.Draw(Main.Camera.Center - Main.screenPosition, Color.White, size: Main.ScreenSize.ToVector2(), rotationCenter: Main.LocalPlayer.Center);
+            
+            shader = EffectsLoader.shaderHandlers["cosmic3DBorders"];
 
             shader.setProperties([Color.Goldenrod.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value,TextureAssets.Extra[ExtrasID.FlameLashTrailShape].Value, shaderData: new Vector4(0, 0, 0, 0));
             shader.apply();
