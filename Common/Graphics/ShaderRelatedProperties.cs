@@ -88,12 +88,16 @@ public class ModdedShaderHandler : ILoadable {
 			GraphicsDevice.SamplerStates[3] = SamplerState.LinearWrap;
 			GraphicsDevice.Textures[3] = _texutre3;
 		}
+		if(skybox != null)
+		{
+			GraphicsDevice.Textures[4] = skybox;
+		}
 	}
 	public void apply() {
 		var viewport = GraphicsDevice.Viewport;
 		Effect effect = _effect.Value;
 		setupTextures();
-		effect.Parameters["view"]?.SetValue(Matrix.CreateTranslation(new Vector3(-Main.screenPosition, 0)) * Matrix.CreateScale(1));
+		effect.Parameters["view"]?.SetValue(Matrix.CreateTranslation(new Vector3(-Main.screenPosition, 0)));
 		effect.Parameters["world"]?.SetValue(Main.GameViewMatrix.TransformationMatrix);
 		effect.Parameters["projection"]?.SetValue((Matrix.CreateOrthographicOffCenter(left: 0, right: viewport.Width, bottom: viewport.Height, top: 0, zNearPlane: -1, zFarPlane: 10)));
 		effect.Parameters["viewWorldProjection"].SetValue(Matrix.CreateTranslation(new Vector3(-Main.screenPosition, 0)) * Main.GameViewMatrix.TransformationMatrix * Matrix.CreateOrthographicOffCenter(left: 0, right: viewport.Width, bottom: viewport.Height, top: 0, zNearPlane: -1, zFarPlane: 10));

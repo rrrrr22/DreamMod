@@ -178,8 +178,16 @@ namespace DreamMod.Common.Subworlds
 
         public override void Load()
         {
-            if(!Main.dedServ)
-                cosmicBG = TextureCube.DDSFromStreamEXT(Main.instance.GraphicsDevice,Mod.GetFileStream("Assets\\Textures\\Backgrounds\\IcarusBG.dds"));
+            
+		if (Main.netMode != NetmodeID.Server) {
+
+			Main.RunOnMainThread(() => {
+                cosmicBG = TextureCube.DDSFromStreamEXT(Main.instance.GraphicsDevice,Mod.GetFileStream("Assets/Textures/Backgrounds/IcarusBG.dds"));
+			}).Wait();
+
+            
+		
+            }
         }
         public override void ModifyFarFades(float[] fades, float transitionSpeed)
         {
@@ -193,14 +201,7 @@ namespace DreamMod.Common.Subworlds
         public override bool PreDrawCloseBackground(SpriteBatch spriteBatch)
         {
 
-            ModdedShaderHandler shader = EffectsLoader.shaderHandlers["CosmicNebulaSkyBox"];
-
-            shader.setProperties([Color.Orange.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value, shaderData: new Vector4(0, 0, 0, 0), skybox: cosmicBG);
-            shader.apply();
-
-            rect.Draw(Main.Camera.Center - Main.screenPosition, Color.White, size: Main.ScreenSize.ToVector2(), rotationCenter: Main.LocalPlayer.Center);
-
-            shader = EffectsLoader.shaderHandlers["BackgroundBlackhole"];
+            ModdedShaderHandler shader = EffectsLoader.shaderHandlers["BackgroundBlackhole"];
 
             shader.setProperties([Color.Goldenrod.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value,TextureAssets.Extra[ExtrasID.FlameLashTrailShape].Value, shaderData: new Vector4(0, 0, 0, 0));
             shader.apply();
@@ -210,6 +211,13 @@ namespace DreamMod.Common.Subworlds
             shader = EffectsLoader.shaderHandlers["cosmic3DBorders"];
 
             shader.setProperties([Color.Goldenrod.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value,TextureAssets.Extra[ExtrasID.FlameLashTrailShape].Value, shaderData: new Vector4(0, 0, 0, 0));
+            shader.apply();
+
+            rect.Draw(Main.Camera.Center - Main.screenPosition, Color.White, size: Main.ScreenSize.ToVector2(), rotationCenter: Main.LocalPlayer.Center);
+            
+             shader = EffectsLoader.shaderHandlers["CosmicNebulaSkyBox"];
+
+            shader.setProperties([Color.Orange.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value, shaderData: new Vector4(0,0,0, 0),skybox: cosmicBG);
             shader.apply();
 
             rect.Draw(Main.Camera.Center - Main.screenPosition, Color.White, size: Main.ScreenSize.ToVector2(), rotationCenter: Main.LocalPlayer.Center);

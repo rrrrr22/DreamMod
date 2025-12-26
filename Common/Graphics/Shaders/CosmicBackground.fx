@@ -13,40 +13,6 @@ float2 screenPosition;
 float2 screenSize;
 float2 screenCenter;
 float2 vertexRectSize;
-texture skyboxTexture;
-samplerCUBE skyboxSampler = sampler_state
-{
-    Texture = <skyboxTexture>;
-    magfilter = LINEAR;
-    minfilter = LINEAR;
-    mipfilter = LINEAR;
-    AddressU = Mirror;
-    AddressV = Mirror;
-};
-
-struct VertexShaderInput
-{
-    float4 Position : POSITION0;
-};
- 
-struct VertexShaderOutput
-{
-    float4 Position : POSITION0;
-    float3 TextureCoordinate : TEXCOORD0;
-};
-VertexShaderOutput VertexShaderFunction(VertexShaderInput input)
-{
-    VertexShaderOutput output;
- 
-    float4 worldPosition = mul(input.Position, world);
-    float4 viewPosition = mul(worldPosition, view);
-    output.Position = mul(viewPosition, projection);
- 
-    float4 VertexPosition = mul(input.Position, world);
-    output.TextureCoordinate = VertexPosition - float4(screenPosition,0,0);
- 
-    return output;
-}
 
 
 float PingPong(float value)
@@ -122,20 +88,53 @@ float4 layer(float2 uv, float l, float s)
     }
     return layer;
 }
-
+float sdBox(float3 p, float3 b)
+{
+    float3 q = abs(p) - b;
+    return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
+}
 float sdSphere(float3 p, float s)
 {
-    return (length(p) - s);
+    return max(-(length(p) - s), length(p) - s - 0.1);
+
 }
+float tex(in float2 p)
+{
+    float frq = 50.3;
+    p += 0.405;
+    return float3(1.,1,1) * smoothstep(.9, 1.05, max(sin((p.x) * frq), sin((p.y) * frq)));
+}
+float3 cubeproj(in float3 p)
+{
+    float3 x = tex(p.zy / p.x);
+    float3 y = tex(p.xz / p.y);
+    float3 z = tex(p.xy / p.z);
+    
+    //simple coloring/shading
+    x *= float3(1, 0, 0) * abs(p.x) + p.x * float3(0, 1, 0);
+    y *= float3(0, 1, 0) * abs(p.y) + p.y * float3(0, 0, 1);
+    z *= float3(0, 0, 1) * abs(p.z) + p.z * float3(1, 0, 0);
+    
+    //select face
+    p = abs(p);
+    if (p.x > p.y && p.x > p.z)
+        return x;
+    else if (p.y > p.x && p.y > p.z)
+        return y;
+    else
+        return z;
+        
+}
+
 float Map(float3 p)
 {
-    return sdSphere(p, 2);
+    return cubeproj(p);
 
 }
 
 float4 Cosmic(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 position : SV_Position) : COLOR0
 {
-    float2 centeredUV = coords / screenSize;
+    float2 centeredUV = coords;
     float2 BHcenteredUV = centeredUV - float2(lerp(1, 0, screenPosition.x / 500 / 16), lerp(1, 0, screenPosition.y / 500 / 16));
     BHcenteredUV *= 1;
     float2 pixelatedUV = round(BHcenteredUV * (256.)) / 256.;
@@ -186,14 +185,16 @@ float4 Cosmic(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 pos
     //    aura += randomAura(starUV3, j, 10, colors[0]);
 
     //}
-    float2 nebulaUV = coords - float2(lerp(1, 0, screenPosition.x / 500 / 16),1);
-    float3 rayOrigin = float3(0, 0, -1);
-    float3 rayDir = normalize(float3(nebulaUV.x * 2, nebulaUV.y, 1));
+    float2 nebulaUV = coords - float2(lerp(1, 0, screenPosition.x / 500 / 16), lerp(1, 0, screenPosition.y / 500 / 16));
+    float3 rayOrigin = float3(0, 0, -.1);
+    float3 rayDir = normalize(float3(nebulaUV.x / (screenSize.x / 1280), nebulaUV.y / (screenSize.x / 720), 1));
     float t = 0;
     float3 col = float3(0, 0, 0);
     float3 p = rayOrigin + rayDir * t;
+    
     float lastD = -1;
-    float3 lastP = 0;
+    float3 nebula = tex2D(image2, p.xy);
+
     //raymarching
     for (int h = 0; h < 50; h++)
     {
@@ -201,14 +202,9 @@ float4 Cosmic(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 pos
         t += Map(p);
 
     }
-    p = lastP;
-    float4 nebula = texCUBE(image2, nebulaUV);
     
     //unused blackhole here , i dont want swiss cheese in my cosmic dimension...
-    return lerp(lerp(lerp(float4(0, 0, .0, 1), float4(1.4, 1, 2, 1)
-     * nebula, nebula),
-    finalCol, 0),
-    space, space);
+    return space;
 }
     
 technique Technique1
