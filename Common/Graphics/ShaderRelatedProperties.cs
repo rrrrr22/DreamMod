@@ -8,6 +8,7 @@ using System;
 using Terraria.Graphics.Shaders;
 using Terraria.ModLoader;
 using System.Runtime.CompilerServices;
+using Microsoft.Xna.Framework.Content;
 
 
 namespace DreamMod.Common.Graphics;
@@ -47,17 +48,20 @@ public class ModdedShaderHandler : ILoadable {
 	Texture2D _texutre3 = null;
 	Vector4 _shaderData = new Vector4(0, 0, 0, 0);
 	public bool enabled = false;
+	Vector2 rectSize = default;
+	TextureCube skybox = null;
 	public ModdedShaderHandler(Asset<Effect> effect) {
 
 		this._effect = effect;
 
 	}
-	public void setProperties(Vector3[] colors, Texture2D texutre1 = null, Texture2D texutre2 = null, Texture2D texutre3 = null, Vector4 shaderData = default) {
+	public void setProperties(Vector3[] colors, Texture2D texutre1 = null, Texture2D texutre2 = null, Texture2D texutre3 = null, Vector4 shaderData = default, Vector2 rectSize = default, TextureCube skybox = null) {
 		this._colors = colors;
 		this._texutre1 = texutre1;
 		this._texutre2 = texutre2;
 		this._texutre3 = texutre3;
 		this._shaderData = shaderData;
+		this.skybox = skybox;
 	}
 	public void setProperties(ShaderSettings shaderSettings) {
 		this._colors = shaderSettings.Colors;
@@ -89,6 +93,9 @@ public class ModdedShaderHandler : ILoadable {
 		var viewport = GraphicsDevice.Viewport;
 		Effect effect = _effect.Value;
 		setupTextures();
+		effect.Parameters["view"]?.SetValue(Matrix.CreateTranslation(new Vector3(-Main.screenPosition, 0)) * Matrix.CreateScale(1));
+		effect.Parameters["world"]?.SetValue(Main.GameViewMatrix.TransformationMatrix);
+		effect.Parameters["projection"]?.SetValue((Matrix.CreateOrthographicOffCenter(left: 0, right: viewport.Width, bottom: viewport.Height, top: 0, zNearPlane: -1, zFarPlane: 10)));
 		effect.Parameters["viewWorldProjection"].SetValue(Matrix.CreateTranslation(new Vector3(-Main.screenPosition, 0)) * Main.GameViewMatrix.TransformationMatrix * Matrix.CreateOrthographicOffCenter(left: 0, right: viewport.Width, bottom: viewport.Height, top: 0, zNearPlane: -1, zFarPlane: 10));
 		effect.Parameters["time"].SetValue(Main.GlobalTimeWrappedHourly);
 		effect.Parameters["colors"].SetValue(_colors);
@@ -96,6 +103,8 @@ public class ModdedShaderHandler : ILoadable {
 		effect.Parameters["screenSize"].SetValue(Main.ScreenSize.ToVector2());
 		effect.Parameters["screenPosition"].SetValue(Main.screenPosition);
 		effect.Parameters["playerPosition"]?.SetValue(Main.LocalPlayer.Center);
+		effect.Parameters["vertexRectSize"]?.SetValue(rectSize);
+		effect.Parameters["skyboxTexture"]?.SetValue(skybox);
 		
 		effect.CurrentTechnique.Passes[0].Apply();
 		

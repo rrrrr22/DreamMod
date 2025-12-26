@@ -2,14 +2,28 @@
 sampler2D image1 : register(s1);
 sampler2D image2 : register(s2);
 sampler2D image3 : register(s3);
-
 float4x4 viewWorldProjection;
+float4x4 projection;
+float4x4 view;
+float4x4 world;
 float time;
 float4 shaderData;
 float3 colors[3];
 float2 screenPosition;
 float2 screenSize;
 float2 screenCenter;
+float2 vertexRectSize;
+texture skyboxTexture;
+samplerCUBE skyboxSampler = sampler_state
+{
+    Texture = <skyboxTexture>;
+    magfilter = LINEAR;
+    minfilter = LINEAR;
+    mipfilter = LINEAR;
+    AddressU = Mirror;
+    AddressV = Mirror;
+};
+
 struct VertexShaderInput
 {
     float4 Position : POSITION0;
@@ -24,15 +38,17 @@ VertexShaderOutput VertexShaderFunction(VertexShaderInput input)
 {
     VertexShaderOutput output;
  
-    float4 worldPosition = mul(input.Position, World);
-    float4 viewPosition = mul(worldPosition, View);
-    output.Position = mul(viewPosition, Projection);
+    float4 worldPosition = mul(input.Position, world);
+    float4 viewPosition = mul(worldPosition, view);
+    output.Position = mul(viewPosition, projection);
  
-    float4 VertexPosition = mul(input.Position, World);
-    output.TextureCoordinate = VertexPosition - CameraPosition;
+    float4 VertexPosition = mul(input.Position, world);
+    output.TextureCoordinate = VertexPosition - float4(screenPosition,0,0);
  
     return output;
 }
+
+
 float PingPong(float value)
 {
     value %= 1;
@@ -107,26 +123,19 @@ float4 layer(float2 uv, float l, float s)
     return layer;
 }
 
-float4 randomAura(float2 baseUV, float i,float max_i, float3 color)
+float sdSphere(float3 p, float s)
 {
-    float2 gridUV = frac(baseUV) - .5;
-    float2 gridID = floor(baseUV) - .5;
-    float2 auraUV = baseUV + random(gridID);
-    float4 aura = tex2D(image1, auraUV + .2);
+    return (length(p) - s);
+}
+float Map(float3 p)
+{
+    return sdSphere(p, 2);
 
-
-    float2 rv = random(gridID);
-    aura = tex2D(image1, (gridUV - rv) * 2);
-    aura *=  0.5 * (1 / length(auraUV));
-    //aura.a *= float3(cos(length(auraUV * 20) * float3(5, 2, 10)));
-    //aura.rgb *= 0.25;
-   
-   return aura;
 }
 
-float4 Cosmic(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 position : SV_Position, VertexShaderInput input) : COLOR0
+float4 Cosmic(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 position : SV_Position) : COLOR0
 {
-    float2 centeredUV = float2(coords.x * (screenSize.x / screenSize.y), coords.y * (screenSize.x / screenSize.y));
+    float2 centeredUV = coords / screenSize;
     float2 BHcenteredUV = centeredUV - float2(lerp(1, 0, screenPosition.x / 500 / 16), lerp(1, 0, screenPosition.y / 500 / 16));
     BHcenteredUV *= 1;
     float2 pixelatedUV = round(BHcenteredUV * (256.)) / 256.;
@@ -158,10 +167,13 @@ float4 Cosmic(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 pos
     //star "system" if you could call it that lol
     float4 space = float4(0,0,0,1);
 
+    float2 starUV1 = coords - float2(lerp(1, 0, screenPosition.x / 500 / 16), lerp(1, 0, screenPosition.y / 500 / 16));
+    float2 starUV2 = coords - float2(lerp(1, 0, screenPosition.x / 500 / 24), lerp(1, 0, screenPosition.y / 500 / 24));
+    float2 starUV3 = coords - float2(lerp(1, 0, screenPosition.x / 500 / 32), lerp(1, 0, screenPosition.y / 500 / 32));
 
     for (float i = 0; i < 25; i += 1)
     {
-        float2 starUV = round(coords * 1024) / 1024 - float2(lerp(1, 0, screenPosition.x / 500 / 16), lerp(1, 0, screenPosition.y / 500 / 16));
+        float2 starUV = round(coords * 1024) / 1024 - float2(lerp(1, 0, screenPosition.x / 500 / 16), 1);
         space += layer(starUV, i,  i / 1000);
 
     }
@@ -174,13 +186,29 @@ float4 Cosmic(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 pos
     //    aura += randomAura(starUV3, j, 10, colors[0]);
 
     //}
-    float2 nebulaUV = coords - float2(lerp(1, 0, screenPosition.x / 500 / 16), 0);
+    float2 nebulaUV = coords - float2(lerp(1, 0, screenPosition.x / 500 / 16),1);
+    float3 rayOrigin = float3(0, 0, -1);
+    float3 rayDir = normalize(float3(nebulaUV.x * 2, nebulaUV.y, 1));
+    float t = 0;
+    float3 col = float3(0, 0, 0);
+    float3 p = rayOrigin + rayDir * t;
+    float lastD = -1;
+    float3 lastP = 0;
+    //raymarching
+    for (int h = 0; h < 50; h++)
+    {
+        p = rayOrigin + rayDir * t;
+        t += Map(p);
 
-    float4 nebula = texCUBE(image2, input.Position);
-    
+    }
+    p = lastP;
+    float4 nebula = texCUBE(image2, nebulaUV);
     
     //unused blackhole here , i dont want swiss cheese in my cosmic dimension...
-    return lerp(lerp(lerp(float4(0, 0, 0, 2), nebula * float4(coords.yxx, 1) * 2, nebula), finalCol, 0), space, space);
+    return lerp(lerp(lerp(float4(0, 0, .0, 1), float4(1.4, 1, 2, 1)
+     * nebula, nebula),
+    finalCol, 0),
+    space, space);
 }
     
 technique Technique1

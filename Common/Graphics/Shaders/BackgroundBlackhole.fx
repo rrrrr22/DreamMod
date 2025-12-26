@@ -167,8 +167,8 @@ float map(float3 p, out int ID, int exclude, out float3 lastP)
 {
 
     p = Rotate(p, float3(1, 0, 0), 3.1415);
-    //p = Rotate(p, float3(0, 0, 1), 3.1415 / 2 * .64);
-    //p = Rotate(p, float3(1, 0, 0), 3.1415 / 2 * .25);
+    p = Rotate(p, float3(0, 0, 1), 3.1415 / 2 * .64);
+    p = Rotate(p, float3(1, 0, 0), 3.1415 / 2 * .25);
     
     float plane = sdPlane(p, normalize(float3(0, 0, 1)),2);
     //float plane = sdSphere(p,5);
@@ -222,13 +222,14 @@ float4 Blackhole(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 
 
     }
     p = lastP;
-    float2 polar = float2(atan2(p.y, p.x) / (3.1415 / 2) + length(p), length(p.xy));
+    float d = length(p);
+    float2 polar = float2(atan2(p.y, p.x) / (3.1415 / 2) + d, length(p.xy));
     float2 polar2 = float2(atan2(p.y, p.x) / (3.1415 / 2) * 2, length(p.xy)) * .5;
     float2 polar3 = float2(atan2(p.y, p.x) / (3.1415 / 2) * 4, length(p.xy)) * .25;
     switch (ID)
     {
         case 0:
-                    
+            //col += tex2D(image1, polar / 2 + float2(time,0.25 * time));
         break;
             
         case 1:

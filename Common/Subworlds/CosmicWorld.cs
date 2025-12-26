@@ -1,12 +1,14 @@
 ﻿using DreamMod.Common.Graphics;
 using DreamMod.Common.Graphics.Primitives;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Origins;
 using ReLogic.Content;
 using SubworldLibrary;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,7 +21,9 @@ using Terraria.Graphics.Effects;
 using Terraria.ID;
 using Terraria.IO;
 using Terraria.ModLoader;
+using Terraria.ModLoader.Assets;
 using Terraria.WorldBuilding;
+using tModPorter;
 
 namespace DreamMod.Common.Subworlds
 {
@@ -169,10 +173,13 @@ namespace DreamMod.Common.Subworlds
     }
     public class CosmicWorldModSurfaceBackgroundStyle : ModSurfaceBackgroundStyle
     {
-        Asset<Texture2D> cosmicBG;
+        TextureCube cosmicBG;
+    	static ContentManager ContentManager => Main.instance.Content;
+
         public override void Load()
         {
-            cosmicBG = ModContent.Request<Texture2D>("DreamMod/Assets/Textures/Backgrounds/CosmicBG");
+            if(!Main.dedServ)
+                cosmicBG = TextureCube.DDSFromStreamEXT(Main.instance.GraphicsDevice,Mod.GetFileStream("Assets\\Textures\\Backgrounds\\IcarusBG.dds"));
         }
         public override void ModifyFarFades(float[] fades, float transitionSpeed)
         {
@@ -186,9 +193,9 @@ namespace DreamMod.Common.Subworlds
         public override bool PreDrawCloseBackground(SpriteBatch spriteBatch)
         {
 
-            ModdedShaderHandler shader = EffectsLoader.shaderHandlers["CosmicBackground"];
+            ModdedShaderHandler shader = EffectsLoader.shaderHandlers["CosmicNebulaSkyBox"];
 
-            shader.setProperties([Color.Orange.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value,cosmicBG.Value, shaderData: new Vector4(0, 0, 0, 0));
+            shader.setProperties([Color.Orange.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value, shaderData: new Vector4(0, 0, 0, 0), skybox: cosmicBG);
             shader.apply();
 
             rect.Draw(Main.Camera.Center - Main.screenPosition, Color.White, size: Main.ScreenSize.ToVector2(), rotationCenter: Main.LocalPlayer.Center);
