@@ -3,9 +3,6 @@ sampler2D image1 : register(s1);
 sampler2D image2 : register(s2);
 sampler2D image3 : register(s3);
 float4x4 viewWorldProjection;
-float4x4 projection;
-float4x4 view;
-float4x4 world;
 float time;
 float4 shaderData;
 float3 colors[3];
@@ -165,7 +162,7 @@ float4 Cosmic(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 pos
 
     
     //star "system" if you could call it that lol
-    float4 space = float4(0,0,0,1);
+    float4 space = float4(0,0,0,0);
 
     float2 starUV1 = coords - float2(lerp(1, 0, screenPosition.x / 500 / 16), lerp(1, 0, screenPosition.y / 500 / 16));
     float2 starUV2 = coords - float2(lerp(1, 0, screenPosition.x / 500 / 24), lerp(1, 0, screenPosition.y / 500 / 24));
@@ -173,11 +170,11 @@ float4 Cosmic(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 pos
 
     for (float i = 0; i < 25; i += 1)
     {
-        float2 starUV = round(coords * 1024) / 1024 - float2(lerp(1, 0, screenPosition.x / 500 / 16), 1);
+        float2 starUV = round(coords * 1024) / 1024 - float2(lerp(1, 0, screenPosition.x / 500 / 16), lerp(1, 0, screenPosition.y / 500 / 16));
         space += layer(starUV, i,  i / 1000);
 
     }
-    
+    space.a = space.r + space.g + space.b;
     
     //finally, the aura thingy
     //float4 aura = 0;
@@ -186,7 +183,7 @@ float4 Cosmic(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 pos
     //    aura += randomAura(starUV3, j, 10, colors[0]);
 
     //}
-    float2 nebulaUV = coords - float2(lerp(1, 0, screenPosition.x / 500 / 16),1);
+    float2 nebulaUV = coords - float2(lerp(1, 0, screenPosition.x / 500 / 16), lerp(1, 0, screenPosition.y / 500 / 16));
     float3 rayOrigin = float3(0, 0, -1);
     float3 rayDir = normalize(float3(nebulaUV.x * 2, nebulaUV.y, 1));
     float t = 0;
@@ -202,13 +199,8 @@ float4 Cosmic(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 pos
 
     }
     p = lastP;
-    float4 nebula = texCUBE(image2, nebulaUV);
     
-    //unused blackhole here , i dont want swiss cheese in my cosmic dimension...
-    return lerp(lerp(lerp(float4(0, 0, .0, 1), float4(1.4, 1, 2, 1)
-     * nebula, nebula),
-    finalCol, 0),
-    space, space);
+    return space;
 }
     
 technique Technique1

@@ -2,7 +2,11 @@
 sampler2D image1 : register(s1);
 sampler2D image2 : register(s2);
 sampler2D image3 : register(s3);
+sampler2D image4 : register(s4);
+sampler2D image5 : register(s5);
+sampler2D image6 : register(s6);
 
+float4x4 viewWorldProjection3D;
 float4x4 viewWorldProjection;
 float time;
 float4 shaderData;
@@ -10,264 +14,137 @@ float3 colors[3];
 float2 screenPosition;
 float2 screenSize;
 float2 screenCenter;
-float PingPong(float value)
+struct VertexShaderInput
 {
-    value %= 1;
-    if (value < 0)
-        value += 1;
-
-    if (value >= 0.5)
-        return 2 - value * 2;
-
-    return value * 2;
-}
-float2 Rotate(float2 uv, float amount)
+    float4 Position : POSITION0;
+    float4 TexCoord : TEXCOORD0;
+};
+ 
+struct VertexShaderOutput
 {
-    float2 uv2 = uv;
-    float s = sin(amount);
-    float c = cos(amount);
-    uv2.x = (uv.x * c) + (uv.y * -s);
-    uv2.y = (uv.x * s) + (uv.y * c);
-
-    return uv2;
+    float4 Position : SV_Position;
+    float4 TexCoord : TEXCOORD0;
+};
+VertexShaderOutput VS(VertexShaderInput input)
+{
+    VertexShaderOutput output;
     
-}
-float sdCylinder(float3 p, float3 a, float3 b, float r)
-{
-    float3 ba = b - a;
-    float3 pa = p - a;
-    float baba = dot(ba, ba);
-    float paba = dot(pa, ba);
-    float x = length(pa * baba - ba * paba) - r * baba;
-    float y = abs(paba - baba * 0.5) - baba * 0.5;
-    float x2 = x * x;
-    float y2 = y * y * baba;
-    
-    float d = (max(x, y) < 0.0) ? -min(x2, y2) : (((x > 0.0) ? x2 : 0.0) + ((y > 0.0) ? y2 : 0.0));
-    
-    return sign(d) * sqrt(abs(d)) / baba;
+    output.Position = mul(viewWorldProjection3D, input.Position);
+    output.TexCoord = mul(viewWorldProjection3D, input.TexCoord);
+    return output;
 }
 
-float sdVesica(float2 p, float w, float h)
-{
-    float3 d = 0.5 * (w * w - h * h) / h;
-    p = abs(p);
-    float3 c = (w * p.y < d * (p.x - w)) ? float3(0.0, w, 0.0) : float3(-d.x, 0.0, (d.x) + h);
-    return length(p - c.yx) - c.z;
-}
-float sdCone(float3 p, float2 c, float h)
-{
-
-    float2 q = h * float2(c.x / c.y, -1.0);
-    
-    float2 w = float2(length(p.xz), p.y);
-    float2 a = w - q * clamp(dot(w, q) / dot(q, q), 0.0, 1.0);
-    float2 b = w - q * float2(clamp(w.x / q.x, 0.0, 1.0), 1.0);
-    float k = sign(q.y);
-    float d = min(dot(a, a), dot(b, b));
-    float s = max(k * (w.x * q.y - w.y * q.x), k * (w.y - q.y));
-    return sqrt(d) * sign(s);
-}
 float3 Rotate(float3 p, float3 axis, float angle)
 {
     return lerp(dot(axis, p) * axis, p, cos(angle)) + cross(axis, p) * sin(angle);
 }
 
-float star(float2 uv, float flare)
+float2 SkyBoxUV(in float x,in float y,in float z, out int index)
 {
-    float d = length(uv);
-    float m = .05 / d;
-    
-    float rays = max(0, 1 - abs(uv.x * uv.y * 255));
-    m += rays * flare;
-    uv *= Rotate(uv, 3.1415 / 4.);
-    rays = max(0, 1 - abs(uv.x * uv.y * 255));
-    m += rays * .3 * flare;
-    return m;
-}
-float2 random(float2 p)
-{
-    p = frac(p * float2(123.34, 456.21));
-    p += dot(p, p + 45.32);
-    float x = frac(p.x * 125.63);
-    float y = frac(p.y * 735.32);
-    return float2(x, y) - .5;
-}
 
-float4 layer(float2 uv, float l)
-{
-    float4 layer = float4(0, 0, 0, 0);
-    float2 gridUV = frac(uv * 8) - .5;
-    float2 gridID = floor(uv * 8) - .5;
-    for (float y = -1; y <= 1.; y++)
+    float absX = abs(x);
+    float absY = abs(y);
+    float absZ = abs(z);
+
+    int isXPositive = x > 0 ? 1 : 0;
+    int isYPositive = y > 0 ? 1 : 0;
+    int isZPositive = z > 0 ? 1 : 0;
+
+    float maxAxis, uc, vc;
+    if (isXPositive && absX >= absY && absX >= absZ)
     {
-        for (float x = -1; x <= 1.; x++)
-        {
-            float2 offset = float2(x, y);
-            float2 rv = random(gridID + offset + l);
-            float size = saturate((sin(time * 5 * rv.x)) * rv.y * .5) + .05;
-            float d = length(gridUV - offset - rv);
-            layer += star(gridUV - offset - rv, rv.y * 0.5) * size * float4(rv.x * 7., rv.x * 6, rv.y * 8, 0) * smoothstep(1, 0, d);
-
-        }
-    
+        maxAxis = absX;
+        uc = -z;
+        vc = y;
+        index = 0;
     }
-    return layer;
-}
-
-float sdSphere(float3 p, float s)
-{
-    return (length(p) - s);
-}
-
-float sdPlane(float3 p, float3 normlized, float h)
-{
-    return dot(p, normlized) + h;
-}
-float3 rotateZ(float3 p, float angle)
-{
-    float s = sin(angle);
-    float c = cos(angle);
-    float3 p2 = p;
-    p2.y = (p.x * c) + (p.y * -s);
-    p2.x = (p.x * s) + (p.y * c);
-
-    return p2;
-
-}
-float3 rotateX(float3 p, float angle)
-{
-    float s = sin(angle);
-    float c = cos(angle);
-    float3 p2 = p;
-    p2.y = (p.z * c) + (p.y * -s);
-    p2.z = (p.z * s) + (p.y * c);
-
-    return p2;
-
-}
-
-float3 mutliLerp(float3 value1, float3 value2, float3 value3, float t)
-{
-    float3 value = 0;
-    if (t < 0.5)
+    if (!isXPositive && absX >= absY && absX >= absZ)
     {
-        value = lerp(value1, value2, (t) * 2);
-
+        maxAxis = absX;
+        uc = z;
+        vc = y;
+        index = 1;
     }
-    else
+    if (isYPositive && absY >= absX && absY >= absZ)
     {
-        value = lerp(value2, value3, (t - 0.5) * 2);
-
+        maxAxis = absY;
+        uc = x;
+        vc = -z;
+        index = 2;
     }
-    return value;
-
-}
-float map(float3 p, out int ID, int exclude, out float3 lastP)
-{
-    float planeFront = 1000000000;
-
-    p = Rotate(p, float3(1, 0, 0), 3.1415 / 2);
-    //p = Rotate(p, float3(0, 0, 1), 3.1415 / 2 * .64);
-    //p = Rotate(p, float3(1, 0, 0), 3.1415 / 2 * .25);
-    
-    float plane = sdPlane(p, normalize(float3(0, 0, 1)), p.y);
-    plane = sdSphere(p,5);
-    
-    //p = Rotate(p, float3(1, 0, 0), 3.1415 / 2 * -1);
-    //p = Rotate(p, float3(0, 1, 0), 3.1415);
-    //float plane2 = sdCylinder(p, float3(0, 0, 0), float3(-10,0,10),0.25);
-
-    float d = plane;
-    d = min(d,planeFront);
-    if (d == plane)
+    if (!isYPositive && absY >= absX && absY >= absZ)
     {
-        ID = 0;
+        maxAxis = absY;
+        uc = x;
+        vc = z;
+        index = 3;
     }
-    else if (d == 1)
+    if (isZPositive && absZ >= absX && absZ >= absY)
     {
-        ID = 1;
+        maxAxis = absZ;
+        uc = x;
+        vc = y;
+        index = 4;
     }
-    else
-        ID = 69;
-       
-    lastP = p;
-    return (d);
-}
-
-float map2(float3 p)
-{
-    return sdSphere(p, 16);
-
+    if (!isZPositive && absZ >= absX && absZ >= absY)
+    {
+        maxAxis = absZ;
+        uc = -x;
+        vc = y;
+        index = 5;
+    }
+    float u = 0.5f * (uc / maxAxis + 1.0f);
+    float v = 0.5f * (vc / maxAxis + 1.0f);
+    return float2(u, v);
 }
 
 
 
-
-float4 CosmicBoarder(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 position : SV_Position) : COLOR0
+float4 CosmicBoarder(VertexShaderOutput input) : COLOR0
 {
-    coords = coords / screenSize;
-    float2 uv = (coords + float2(0, 0) + screenPosition / 500 / 16 / float2(1,6)) * 2. - 1;
-    float3 rayOrigin = float3(0, 0, -11);
-    float3 rayDir = normalize(float3(uv.x, uv.y, 1));
-    float t = 0;
-    float3 col = float3(0, 0, 0);
-    float3 p = rayOrigin + rayDir * t;
-    int ID = 0;
-    float lastD = -1;
-    float3 lastP = 0;
-    //raymarching
-    for (int i = 0; i < 50; i++)
-    {
-        p = rayOrigin + rayDir * t;
-        float d = map(p, ID, 0, lastP);
-        t += d;
+    float textureWH = 1024;
+    float3 uv = input.TexCoord;
+    int index = 0;
+    float3 rd = float3(uv.x, uv.y, uv.z / textureWH);
+    rd = normalize(rd);
 
-    }
-    float alpha = 0;
-    float2 polar = float2(atan2(p.y, p.x) / (3.1415 / 2) + length(p), length(p.xy));
-    float2 polar2 = float2(atan2(p.y, p.x) / (3.1415 / 2) * 2, length(p.xy)) * .5;
-    float2 polar3 = float2(atan2(p.y, p.x) / (3.1415 / 2) * 4, length(p.xy)) * .25;
-    switch (ID)
+
+    float2 skyBoxUV = SkyBoxUV(rd.x, rd.y, rd.z, index);
+    float4 finalCol = 0;
+    switch (index)
     {
+        
+        
         case 0:
-            float4 textureBoarder = tex2D(image1, p.xy * .1 + float2(time * .2, 0)) * smoothstep(1, 0, t / 30);
-            float textureBoarderMask = tex2D(image1, p.xy * .24 - float2(time * .2, 0)).r;
-            col = textureBoarder * textureBoarderMask;
-            alpha = col.r;
-            col *= float3(p.x,t / 3,.25 * t) * 0.25;
-            
-            return float4(col, alpha);
-
-          
-            
+            finalCol = tex2D(image2, skyBoxUV);
+            break;
         case 1:
-            col = tex2D(image1, Rotate(p.xy, 3.1415 / 2) + float2(time, 0));
-            col *= smoothstep(1, 0, length(p));
-            //col *= tex2D(image1, Rotate(polar, 3.1415 / 2) + float2(time, 0)).r;
-            return float4(col, alpha);
-
+            finalCol = tex2D(image4, skyBoxUV);
             break;
-            
-        default:
-            return float4(col, alpha);
-
+        case 2:
+            finalCol = tex2D(image6, skyBoxUV);
             break;
+        case 3:
+            finalCol = tex2D(image5, skyBoxUV);
+            break;
+        case 4:
+            finalCol = tex2D(image3, skyBoxUV);
+            break;
+        case 5:
+            finalCol = tex2D(image1, skyBoxUV);
+            break;
+
     }
     
+    return finalCol;
     
-    //aura
-
-    //col += tex2D(image2, uv).r;
-    
-    // clear the bg and only draw the shape at full brightness
 }
     
 technique Technique1
 {
     pass CosmicBoarder
     {
-        
+        VertexShader = compile vs_3_0 VS();
         PixelShader = compile ps_3_0 CosmicBoarder();
     }
 }

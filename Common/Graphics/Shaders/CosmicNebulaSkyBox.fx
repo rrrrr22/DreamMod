@@ -16,49 +16,25 @@ float2 vertexRectSize;
 texture skyboxTexture;
 samplerCUBE skyboxSampler = sampler_state
 {
-    Texture = (skyboxSampler);
-    MinFilter = LINEAR;
-    MagFilter = LINEAR;
-    MipFilter = LINEAR;
-    AddressU = Clamp;
-    AddressV = Clamp;
-    AddressW = Clamp;
+    Texture = <skyboxTexture>;
+    MAGFILTER = LINEAR;
+    MINFILTER = ANISOTROPIC;
+    MIPFILTER = LINEAR;
+    AddressU = Wrap;
+    AddressV = Wrap;
+    AddressW = Wrap;
 };
 
-struct VertexShaderInput
+float4 PS(float2 coords : TEXCOORD0) : COLOR0
 {
-    float4 Position : POSITION0;
-};
- 
-struct VertexShaderOutput
-{
-    float4 Position : POSITION0;
-    float3 TextureCoordinate : TEXCOORD0;
-};
-VertexShaderOutput VS(VertexShaderInput input)
-{
-    VertexShaderOutput output;
- 
-    float4 worldPosition = mul(input.Position, world);
-    float4 viewPosition = mul(worldPosition, view);
-    output.Position = mul(viewPosition, projection);
- 
-    float4 VertexPosition = mul(input.Position, world);
-    output.TextureCoordinate = VertexPosition - float4(screenPosition, 0, 0);
- 
-    return output;
-}
-
-float4 PS(VertexShaderOutput input) : COLOR0
-{
-    return texCUBE(skyboxSampler, normalize(input.TextureCoordinate));
+    return float4(0,0,0,1) +
+    texCUBE(skyboxSampler, float3(coords,1));
 }
 
 technique t0
 {
     pass skybox
     {
-        VertexShader = compile vs_3_0 VS();
         PixelShader = compile ps_3_0 PS();
     }
 }

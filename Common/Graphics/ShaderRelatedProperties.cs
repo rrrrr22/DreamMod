@@ -46,6 +46,9 @@ public class ModdedShaderHandler : ILoadable {
 	Texture2D _texutre1 = null;
 	Texture2D _texutre2 = null;
 	Texture2D _texutre3 = null;
+	Texture2D _texutre4 = null;
+	Texture2D _texutre5 = null;
+	Texture2D _texutre6 = null;
 	Vector4 _shaderData = new Vector4(0, 0, 0, 0);
 	public bool enabled = false;
 	Vector2 rectSize = default;
@@ -55,11 +58,14 @@ public class ModdedShaderHandler : ILoadable {
 		this._effect = effect;
 
 	}
-	public void setProperties(Vector3[] colors, Texture2D texutre1 = null, Texture2D texutre2 = null, Texture2D texutre3 = null, Vector4 shaderData = default, Vector2 rectSize = default, TextureCube skybox = null) {
+	public void setProperties(Vector3[] colors, Texture2D texutre1 = null, Texture2D texutre2 = null, Texture2D texutre3 = null, Texture2D texutre4 = null, Texture2D texutre5 = null, Texture2D texutre6 = null, Vector4 shaderData = default, Vector2 rectSize = default, TextureCube skybox = null) {
 		this._colors = colors;
 		this._texutre1 = texutre1;
 		this._texutre2 = texutre2;
 		this._texutre3 = texutre3;
+		this._texutre4 = texutre4;
+		this._texutre5 = texutre5;
+		this._texutre6 = texutre6;
 		this._shaderData = shaderData;
 		this.skybox = skybox;
 	}
@@ -88,14 +94,24 @@ public class ModdedShaderHandler : ILoadable {
 			GraphicsDevice.SamplerStates[3] = SamplerState.LinearWrap;
 			GraphicsDevice.Textures[3] = _texutre3;
 		}
+		if (_texutre4 != null) {
+			GraphicsDevice.SamplerStates[4] = SamplerState.LinearWrap;
+			GraphicsDevice.Textures[4] = _texutre4;
+		}
+		if (_texutre5 != null) {
+			GraphicsDevice.SamplerStates[5] = SamplerState.LinearWrap;
+			GraphicsDevice.Textures[5] = _texutre5;
+		}
+		if (_texutre6 != null) {
+			GraphicsDevice.SamplerStates[6] = SamplerState.LinearWrap;
+			GraphicsDevice.Textures[6] = _texutre6;
+		}
 	}
 	public void apply() {
 		var viewport = GraphicsDevice.Viewport;
 		Effect effect = _effect.Value;
 		setupTextures();
-		effect.Parameters["view"]?.SetValue(Matrix.CreateTranslation(new Vector3(-Main.screenPosition, 0)) * Matrix.CreateScale(1));
-		effect.Parameters["world"]?.SetValue(Main.GameViewMatrix.TransformationMatrix);
-		effect.Parameters["projection"]?.SetValue((Matrix.CreateOrthographicOffCenter(left: 0, right: viewport.Width, bottom: viewport.Height, top: 0, zNearPlane: -1, zFarPlane: 10)));
+		effect.Parameters["viewWorldProjection3D"]?.SetValue(Matrix.Identity * Matrix.CreateLookAt(new Vector3(0,0,-1024f), Vector3.Zero, Vector3.Up) * Matrix.CreatePerspectiveFieldOfView(3.1415f / 4f, GraphicsDevice.Viewport.AspectRatio, 1f, 2f));
 		effect.Parameters["viewWorldProjection"].SetValue(Matrix.CreateTranslation(new Vector3(-Main.screenPosition, 0)) * Main.GameViewMatrix.TransformationMatrix * Matrix.CreateOrthographicOffCenter(left: 0, right: viewport.Width, bottom: viewport.Height, top: 0, zNearPlane: -1, zFarPlane: 10));
 		effect.Parameters["time"].SetValue(Main.GlobalTimeWrappedHourly);
 		effect.Parameters["colors"].SetValue(_colors);

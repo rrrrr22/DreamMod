@@ -83,7 +83,7 @@ namespace DreamMod.Common.Subworlds
     {
         public override void Load()
         {
-            
+
         }
 
 
@@ -152,7 +152,7 @@ namespace DreamMod.Common.Subworlds
 
         public override void OnInBiome(Player player)
         {
-            if(SubworldSystem.IsActive<CosmicWorld>())
+            if (SubworldSystem.IsActive<CosmicWorld>())
             {
                 DisableWorldBackgroundElements();
                 player.wingTime = player.wingTimeMax;
@@ -168,18 +168,36 @@ namespace DreamMod.Common.Subworlds
             }
             Main.cloudBGActive = 0;
 
-            
+
         }
     }
     public class CosmicWorldModSurfaceBackgroundStyle : ModSurfaceBackgroundStyle
     {
-        TextureCube cosmicBG;
-    	static ContentManager ContentManager => Main.instance.Content;
+        Asset<Texture2D> cosmicBGFront;
+        Asset<Texture2D> cosmicBGBack;
+        Asset<Texture2D> cosmicBGLeft;
+        Asset<Texture2D> cosmicBGRight;
+        Asset<Texture2D> cosmicBGDown;
+        Asset<Texture2D> cosmicBGUp;
+
+        static ContentManager ContentManager => Main.instance.Content;
 
         public override void Load()
         {
-            if(!Main.dedServ)
-                cosmicBG = TextureCube.DDSFromStreamEXT(Main.instance.GraphicsDevice,Mod.GetFileStream("Assets\\Textures\\Backgrounds\\IcarusBG.dds"));
+            //if (Main.netMode != NetmodeID.Server)
+            //{
+            //    Main.RunOnMainThread(() =>
+            //    {
+            //        cosmicBG = TextureCube.DDSFromStreamEXT(Main.instance.GraphicsDevice, Mod.GetFileStream("Assets/Textures/Backgrounds/IcarusBG.dds"));
+            //    }).Wait();
+            //}
+
+            cosmicBGBack = Mod.Assets.Request<Texture2D>("Assets/Textures/Backgrounds/IcarusBG_back");
+            cosmicBGFront = Mod.Assets.Request<Texture2D>("Assets/Textures/Backgrounds/IcarusBG_front");
+            cosmicBGDown = Mod.Assets.Request<Texture2D>("Assets/Textures/Backgrounds/IcarusBG_down");
+            cosmicBGUp = Mod.Assets.Request<Texture2D>("Assets/Textures/Backgrounds/IcarusBG_up");
+            cosmicBGRight = Mod.Assets.Request<Texture2D>("Assets/Textures/Backgrounds/IcarusBG_right");
+            cosmicBGLeft = Mod.Assets.Request<Texture2D>("Assets/Textures/Backgrounds/IcarusBG_left");
         }
         public override void ModifyFarFades(float[] fades, float transitionSpeed)
         {
@@ -193,23 +211,24 @@ namespace DreamMod.Common.Subworlds
         public override bool PreDrawCloseBackground(SpriteBatch spriteBatch)
         {
 
-            ModdedShaderHandler shader = EffectsLoader.shaderHandlers["CosmicNebulaSkyBox"];
 
-            shader.setProperties([Color.Orange.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value, shaderData: new Vector4(0, 0, 0, 0), skybox: cosmicBG);
+            ModdedShaderHandler shader = EffectsLoader.shaderHandlers["Cosmic3DBorders"];
+
+            shader.setProperties([Color.Goldenrod.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()],cosmicBGBack.Value, cosmicBGLeft.Value, cosmicBGFront.Value, cosmicBGRight.Value, cosmicBGUp.Value, cosmicBGDown.Value, shaderData: new Vector4(0, 0, 0, 0));
             shader.apply();
 
-            rect.Draw(Main.Camera.Center - Main.screenPosition, Color.White, size: Main.ScreenSize.ToVector2(), rotationCenter: Main.LocalPlayer.Center);
+            rect.Draw(Vector2.Zero, Color.White, size: Main.ScreenSize.ToVector2(), rotationCenter: Vector2.Zero);
+
+            //shader = EffectsLoader.shaderHandlers["CosmicBackground"];
+
+            //shader.setProperties([Color.Goldenrod.ToVector3(), Color.PowderBlue.ToVector3()], cosmicBGBack.Value, cosmicBGLeft.Value, cosmicBGFront.Value, cosmicBGRight.Value, cosmicBGUp.Value, cosmicBGDown.Value);
+            //shader.apply();
+
+            //rect.Draw(Main.Camera.Center - Main.screenPosition, Color.White, size: Main.ScreenSize.ToVector2(), rotationCenter: Main.LocalPlayer.Center);
 
             shader = EffectsLoader.shaderHandlers["BackgroundBlackhole"];
 
-            shader.setProperties([Color.Goldenrod.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value,TextureAssets.Extra[ExtrasID.FlameLashTrailShape].Value, shaderData: new Vector4(0, 0, 0, 0));
-            shader.apply();
-
-            rect.Draw(Main.Camera.Center - Main.screenPosition, Color.White, size: Main.ScreenSize.ToVector2(), rotationCenter: Main.LocalPlayer.Center);
-            
-            shader = EffectsLoader.shaderHandlers["cosmic3DBorders"];
-
-            shader.setProperties([Color.Goldenrod.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value,TextureAssets.Extra[ExtrasID.FlameLashTrailShape].Value, shaderData: new Vector4(0, 0, 0, 0));
+            shader.setProperties([Color.Goldenrod.ToVector3(), Color.PowderBlue.ToVector3(), Color.Transparent.ToVector3()], TextureAssets.Extra[193].Value, TextureAssets.Extra[ExtrasID.FlameLashTrailShape].Value, shaderData: new Vector4(0, 0, 0, 0));
             shader.apply();
 
             rect.Draw(Main.Camera.Center - Main.screenPosition, Color.White, size: Main.ScreenSize.ToVector2(), rotationCenter: Main.LocalPlayer.Center);
@@ -217,4 +236,5 @@ namespace DreamMod.Common.Subworlds
             return false;
         }
     }
+
 }
