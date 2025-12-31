@@ -40,7 +40,7 @@ namespace DreamMod.Common.Systems
         public bool isCounter = false;
         public Action onFinsihed;
 
-        public float Progress => isCounter ? 1 - currentFramesPassedOrRemained / maxOrStartingValue : currentFramesPassedOrRemained / maxOrStartingValue;
+        public float Progress => isCounter ? (float)currentFramesPassedOrRemained / maxOrStartingValue : 1f - (float)currentFramesPassedOrRemained / maxOrStartingValue;
         public FrameCounter(object holder, int value = 60, bool startAutomatically = true)
         {
             if (value != -1)
@@ -48,7 +48,7 @@ namespace DreamMod.Common.Systems
             else
             {
                 this.isCounter = true;
-                maxOrStartingValue = 0;
+                maxOrStartingValue = 1;
             }
 
             this.holder = holder;

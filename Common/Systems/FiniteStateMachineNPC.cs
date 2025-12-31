@@ -86,11 +86,16 @@ namespace DreamMod.Common.Systems
     }
     public class AIState : ILoadable
     {
+        public virtual void SetDefaults() 
+        {
+        
+        }
         public static AIState NewAIState(NPC npc, int type)
         {
             AIState state = (AIState)AIStates[type].MemberwiseClone();
             state.stateCounter = new(npc,-1,false);
             state.NPC = npc;
+            state.SetDefaults();
             return state;
         }
         public virtual void StateDraw(DrawData mainSprite, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)

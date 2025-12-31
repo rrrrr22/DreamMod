@@ -309,19 +309,12 @@ namespace DreamMod.Content.Npcs
         public TweenHandler<float> dashFlashLengthTweens = new();
         public TweenHandler<float> dashFlashRotationTweens = new();
         public TweenHandler<float> dashFlashAlphaTweens = new();
-
-        public override void OnEntered(int oldState)
+        public override void SetDefaults()
         {
-            base.OnEntered(oldState);
-            NPC.damage = 0;
-            hasReachedPlayer = false;
-            isMovingBackToNormalZ = false;
-            isFinishedSlamming = false;
-            NPC.localAI[1] = (float)Perspectives.Front;
             dashFlashAlphaTweens.Tweens =
             [
             new Tween<float>(MathHelper.Lerp,false).SetProperties(0,1, TweenEaseType.OutBack,20),
-            new Tween<float>(MathHelper.Lerp,false).SetProperties(1,0.8f, TweenEaseType.OutBack,25)
+                        new Tween<float>(MathHelper.Lerp,false).SetProperties(1,0.8f, TweenEaseType.OutBack,25)
             ];
 
             dashFlashLengthTweens.Tweens =
@@ -335,6 +328,16 @@ namespace DreamMod.Content.Npcs
             new Tween<float>(MathHelper.Lerp,false).SetProperties(0,0, TweenEaseType.OutBack,15),
             new Tween<float>(MathHelper.Lerp,false).SetProperties(MathHelper.TwoPi / 3f,0, TweenEaseType.OutBack,30),
             ];
+        }
+        public override void OnEntered(int oldState)
+        {
+            base.OnEntered(oldState);
+            NPC.damage = 0;
+            hasReachedPlayer = false;
+            isMovingBackToNormalZ = false;
+            isFinishedSlamming = false;
+            NPC.localAI[1] = (float)Perspectives.Front;
+
 
         }
         public override void StateDraw(DrawData mainSprite, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
@@ -345,8 +348,13 @@ namespace DreamMod.Content.Npcs
         }
         public override void OnStateUpdate(CommonNPCInfo info)
         {
+
             if (Counter == 70 || Counter == 260)
-                NPC.localAI[0] = 1;
+            {
+                dashFlashAlphaTweens.PlayTweens();
+                dashFlashLengthTweens.PlayTweens();
+                dashFlashRotationTweens.PlayTweens();
+            }
 
             if (isFinishedSlamming)
             {
@@ -375,12 +383,6 @@ namespace DreamMod.Content.Npcs
                 zDepth = MathHelper.Lerp(0, 1, DreamUtils.EaseOutBack(((Counter - 60f) / 60f)));
 
 
-                if (Counter == 120)
-                {
-                    dashFlashAlphaTweens.PlayTweens();
-                    dashFlashLengthTweens.PlayTweens();
-                    dashFlashRotationTweens.PlayTweens();
-                }
 
                 return;
             }

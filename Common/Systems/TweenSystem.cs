@@ -70,7 +70,7 @@ public class Tween<T> where T : struct
 
         get
         {
-            float prog = currentDuration.currentFramesPassedOrRemained;
+            float prog = currentDuration.Progress;
 
             switch (easeType)
             {
@@ -91,7 +91,7 @@ public class Tween<T> where T : struct
                 //    break;
 
                 case TweenEaseType.OutBack:
-                    prog = DreamUtils.EaseOutBack(currentDuration.currentFramesPassedOrRemained);
+                    prog = DreamUtils.EaseOutBack(currentDuration.Progress);
                     break;
 
             }
