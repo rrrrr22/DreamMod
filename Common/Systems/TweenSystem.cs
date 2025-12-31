@@ -4,9 +4,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Terraria;
+using Terraria.Initializers;
 using Terraria.ModLoader;
 
 namespace DreamMod.Common.Systems;
+
 
 public enum TweenEaseType : byte
 {
@@ -19,28 +21,18 @@ public enum TweenEaseType : byte
     OutBack = 5,
 }
 
-public enum TweenState : byte
-{
-    Stopped,
-    Running,
-    Paused
-
-
-}
 /// <summary>
 /// A Tween, when started, use its currentProgress field to get the running value, Also must be updated manually using the Update method, at least for now untill i figure out the best way to update it automatically
 /// </summary>
 /// <typeparam name="T"></typeparam>
 public class Tween<T> where T : struct
 {
-    public int currentDuration = 0;
-    public T currentProgress;
-    private float currentProgressPercentage = 0;
+    public T currentProgress => lerp(start, finish, currentProgressPercentage);
     public T start;
     public T finish;
     private TweenEaseType easeType;
-    public TweenState state;
-    private float endDuration = 0;
+    //public TweenState state;
+    public FrameCounter currentDuration;
     public Action<Tween<T>> onFinsihed;
     public delegate T lerpFunction(T value1, T value2, float amount);
     public lerpFunction lerp;
@@ -53,81 +45,66 @@ public class Tween<T> where T : struct
     }
     public Tween<T> Start(T start, T finish, TweenEaseType type, int duration)
     {
-        this.start = start;
-        this.finish = finish;
-        easeType = type;
-        currentDuration = 0;
-        endDuration = duration;
-        state = TweenState.Running;
+        SetProperties(start, finish, type, duration, true);
         return this;
-
-
     }
     public Tween<T> Start()
     {
-
-        currentDuration = 0;
-        state = TweenState.Running;
+        currentDuration.Start();
         return this;
     }
 
-    public Tween<T> SetProperties(T start, T finish, TweenEaseType type, int duration)
+    public Tween<T> SetProperties(T start, T finish, TweenEaseType type, int duration, bool run = false)
     {
-
+        currentDuration = new(this, duration, run);
         this.start = start;
         this.finish = finish;
         easeType = type;
-        currentDuration = 0;
-        endDuration = duration;
-        state = TweenState.Paused;
+        currentDuration.onFinsihed += () => onFinsihed?.Invoke(this);
+        currentDuration.state = FrameCounterState.Paused;
         return this;
     }
 
-    public void Pause() => state = TweenState.Paused;
-    public void Resume() => state = TweenState.Running;
-    public void Update()
+    public float currentProgressPercentage
     {
-        if (state == TweenState.Paused || state == TweenState.Stopped)
-            return;
 
-
-        if (currentDuration < endDuration)
-            currentDuration++;
-
-        switch (easeType)
+        get
         {
-            case TweenEaseType.None:
-                currentProgressPercentage = currentDuration / endDuration;
-                break;
+            float prog = currentDuration.currentFramesPassedOrRemained;
 
-            //TODO: fix this stuff
+            switch (easeType)
+            {
 
-            //case TweenEaseType.InSine:
-            //	currentProgressPercentage = BossRushUtils.InSine(currentDuration / endDuration);
-            //	break;
-            //case TweenEaseType.OutSine:
-            //	currentProgressPercentage = BossRushUtils.OutSine(currentDuration / endDuration);
-            //	break;
-            //case TweenEaseType.InExpo:
-            //	currentProgressPercentage = BossRushUtils.InExpo(currentDuration / endDuration,11f);
-            //	break;
-            //case TweenEaseType.OutExpo:
-            //	currentProgressPercentage = BossRushUtils.OutExpo(currentDuration / endDuration,11f);
-            //	break;
+                //TODO: fix this stuff
 
-            case TweenEaseType.OutBack:
-                currentProgressPercentage = DreamUtils.EaseOutBack(currentDuration / endDuration);
-                break;
-        }
-        if (pingpongEnabled)
-            Terraria.Utils.PingPongFrom01To010(currentProgressPercentage);
-        currentProgress = lerp(start, finish, currentProgressPercentage);
-        if (currentDuration == endDuration)
-        {
-            onFinsihed?.Invoke(this);
-            state = TweenState.Stopped;
+                //    case TweenEaseType.InSine:
+                //    currentProgressPercentage = BossRushUtils.InSine(currentDuration / endDuration);
+                //    break;
+                //case TweenEaseType.OutSine:
+                //    currentProgressPercentage = BossRushUtils.OutSine(currentDuration / endDuration);
+                //    break;
+                //case TweenEaseType.InExpo:
+                //    currentProgressPercentage = BossRushUtils.InExpo(currentDuration / endDuration, 11f);
+                //    break;
+                //case TweenEaseType.OutExpo:
+                //    currentProgressPercentage = BossRushUtils.OutExpo(currentDuration / endDuration, 11f);
+                //    break;
+
+                case TweenEaseType.OutBack:
+                    prog = DreamUtils.EaseOutBack(currentDuration.currentFramesPassedOrRemained);
+                    break;
+
+            }
+            if (pingpongEnabled)
+                return Terraria.Utils.PingPongFrom01To010(prog);
+
+            return prog;
         }
     }
+
+    public void Pause() => currentDuration.state = FrameCounterState.Paused;
+    public void Resume() => currentDuration.state = FrameCounterState.Running;
+
 }
 
 /// <summary>
@@ -140,7 +117,7 @@ public class TweenHandler<T> where T : struct
     public List<Tween<T>> Tweens
     {
         get => tweens;
-        
+
         set
         {
             value.ForEach((t) => tweens.Add(t));
@@ -168,11 +145,4 @@ public class TweenHandler<T> where T : struct
     public void Pause() => currentTween.Pause();
     public void Resume() => currentTween.Resume();
 
-    public void Update()
-    {
-        foreach (var t in tweens)
-        {
-            t.Update();
-        }
-    }
 }

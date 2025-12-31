@@ -10,40 +10,7 @@ float2 screenPosition;
 float2 screenSize;
 float2 screenCenter;
 float2 vertexRectSize;
-texture skyboxTexture;
-samplerCUBE skyboxSampler = sampler_state
-{
-    Texture = <skyboxTexture>;
-    magfilter = LINEAR;
-    minfilter = LINEAR;
-    mipfilter = LINEAR;
-    AddressU = Mirror;
-    AddressV = Mirror;
-};
 
-struct VertexShaderInput
-{
-    float4 Position : POSITION0;
-};
- 
-struct VertexShaderOutput
-{
-    float4 Position : POSITION0;
-    float3 TextureCoordinate : TEXCOORD0;
-};
-VertexShaderOutput VertexShaderFunction(VertexShaderInput input)
-{
-    VertexShaderOutput output;
- 
-    float4 worldPosition = mul(input.Position, world);
-    float4 viewPosition = mul(worldPosition, view);
-    output.Position = mul(viewPosition, projection);
- 
-    float4 VertexPosition = mul(input.Position, world);
-    output.TextureCoordinate = VertexPosition - float4(screenPosition,0,0);
- 
-    return output;
-}
 
 
 float PingPong(float value)
@@ -84,7 +51,7 @@ float star(float2 uv, float flare)
     float m = .05 / d;
     
     float rays = max(0, 1-abs(uv.x*uv.y* 255));
-    m += rays * flare;
+    m += rays * flare * 30;
     uv *= Rotate(uv,3.1415/4.);
     rays = max(0, 1 - abs(uv.x * uv.y * 255));
     m += rays * .3 * flare;
@@ -98,8 +65,11 @@ float2 random(float2 p)
     float y = frac(p.y * 735.32);
     return float2(x,y) - .5;
 }
-
-float4 layer(float2 uv, float l, float s)
+float3 palette(in float t, in float3 a, in float3 b, in float3 c, in float3 d)
+{
+    return a + b * cos(6.283185 * (c * t + d));
+}
+float4 layer(in float2 uv, float l, float s)
 {
     float4 layer = float4(0,0,0,0);
     float2 gridUV = frac(uv * 8) - .5;
@@ -110,9 +80,11 @@ float4 layer(float2 uv, float l, float s)
         {
             float2 offset = float2(x, y);
             float2 rv = random(gridID + offset + l);
-            float size = saturate((sin(time * 5 * rv.x)) * rv.y * .5) + s;
+            float size = saturate((sin(time * 10 * rv.x)) * rv.y * .5) + min(s,1);
             float d = length(gridUV - offset - rv);
-            layer += star(gridUV - offset - rv, rv.y * 0.5) * size * float4(cos(length(rv * 20) * lerp(float3(0, 2, 1), float3(0, 0, 1), uv.x)) + .2, 0) * smoothstep(1, 0, d);
+            float4 col = float4(palette(length(random(rv)), float3(0.5, .5, .5), float3(0.5, .5, .5), float3(1, 1, 1), float3(0.5, 1, 1)),
+            1);
+            layer += star(gridUV - offset - rv, rv.y * 0.5) * col * size * smoothstep(1, 0, d * 2);
 
         }
     
@@ -168,13 +140,13 @@ float4 Cosmic(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 pos
     float2 starUV2 = coords - float2(lerp(1, 0, screenPosition.x / 500 / 24), lerp(1, 0, screenPosition.y / 500 / 24));
     float2 starUV3 = coords - float2(lerp(1, 0, screenPosition.x / 500 / 32), lerp(1, 0, screenPosition.y / 500 / 32));
 
-    for (float i = 0; i < 25; i += 1)
+    for (float i = 1; i < 26; i += 1)
     {
-        float2 starUV = round(coords * 1024) / 1024 - float2(lerp(1, 0, screenPosition.x / 500 / 16), lerp(1, 0, screenPosition.y / 500 / 16));
-        space += layer(starUV, i,  i / 1000);
+        float2 starUV = round(coords * 1024) / 1024 - float2(lerp(1, 0, screenPosition.x / 500 / 16  * (i / 25)), lerp
+        (1, 0, screenPosition.y / 500 / 16 * (i / 25)));
+        space += layer(starUV, 1+i,  i / 6);
 
     }
-    space.a = space.r + space.g + space.b;
     
     //finally, the aura thingy
     //float4 aura = 0;
@@ -200,7 +172,8 @@ float4 Cosmic(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 pos
     }
     p = lastP;
     
-    return space;
+    return 
+    float4(0,0,0,0);
 }
     
 technique Technique1

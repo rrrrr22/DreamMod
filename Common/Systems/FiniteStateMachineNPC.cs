@@ -29,7 +29,7 @@ namespace DreamMod.Common.Systems
             }
 
         }
-        public int currentStateCounter => states.currentState.counter;
+        public int currentStateCounter => states.currentState.Counter;
         public static int StateType<T>() where T : AIState => ModContent.GetInstance<T>().type;
 
         public override sealed void OnSpawn(IEntitySource source)
@@ -89,10 +89,11 @@ namespace DreamMod.Common.Systems
         public static AIState NewAIState(NPC npc, int type)
         {
             AIState state = (AIState)AIStates[type].MemberwiseClone();
+            state.stateCounter = new(npc,-1,false);
             state.NPC = npc;
             return state;
         }
-        public virtual void StateDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
+        public virtual void StateDraw(DrawData mainSprite, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
         {
         
         }
@@ -107,7 +108,8 @@ namespace DreamMod.Common.Systems
         }
         public static int StateType<T>() where T : AIState => ModContent.GetInstance<T>().type;
         public static readonly List<AIState> AIStates = new List<AIState>();
-        public int counter = 0;
+        public FrameCounter stateCounter;
+        public int Counter => stateCounter.currentFramesPassedOrRemained;
         public Action<AIState> changeState;
         public Player Target
         {
@@ -169,6 +171,7 @@ namespace DreamMod.Common.Systems
                 this.states[type].changeState += OnStateChange;
             }
             currentState = this.states[states[0]];
+            currentState.stateCounter.Start();
         }
         private Dictionary<int, AIState> states = [];
         public bool justHitTheGround = false;
@@ -207,15 +210,15 @@ namespace DreamMod.Common.Systems
             info.inGround = inGround;
             info.justHitTheGround = justHitTheGround;
             currentState.OnStateUpdate(info);
-            currentState.counter++;
         }
         public void OnStateChange(AIState oldState)
         {
-            oldState.counter = 0;
             oldState.OnExited(npc.aiAction);
             AIState newState = states[npc.aiAction];
             currentState = newState;
+            currentState.stateCounter.Start();
             currentState.OnEntered(oldState.type);
+
         }
 
         public AIState currentState = null;

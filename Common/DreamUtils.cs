@@ -1,4 +1,5 @@
 ﻿using DreamMod.Common.Graphics;
+using DreamMod.Common.Systems;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -18,7 +19,10 @@ namespace DreamMod.Common
 {
     public static class DreamUtils
     {
-
+        public static FrameCounter NewFrameCounter(this object holder, int value, bool startAutomatically = true)
+        {
+            return new FrameCounter(holder, value, startAutomatically);
+        }
         public static float EaseOutBack(float x)
         {
             const float c1 = 1.70158f;
@@ -89,7 +93,7 @@ namespace DreamMod.Common
         }
         public static void ApplyZDepthColor(this IZDepth zDepthHolder, ref Color drawColor)
         {
-            drawColor = new Color((zDepthHolder.zDepth) * (drawColor.R / 255f), (zDepthHolder.zDepth) * (drawColor.G / 255f), (zDepthHolder.zDepth) * (drawColor.B / 255f), 1);
+            drawColor = new Color((zDepthHolder.zDepth * 2f) * (drawColor.R / 255f), (zDepthHolder.zDepth * 2f) * (drawColor.G / 255f), (zDepthHolder.zDepth * 2f) * (drawColor.B / 255f), 1);
         }
         public static void ApplyZDepthScale(this IZDepth zDepthHolder, ref Vector2 scale) => scale *= new Vector2(MathHelper.Clamp(MathHelper.Lerp(0.0f, 1f, (zDepthHolder.zDepth)), 0, 1));
     }
