@@ -50,11 +50,7 @@ float star(float2 uv, float flare)
     float d = length(uv);
     float m = .05 / d;
     
-    float rays = max(0, 1-abs(uv.x*uv.y* 255));
-    m += rays * flare * 30;
-    uv *= Rotate(uv,3.1415/4.);
-    rays = max(0, 1 - abs(uv.x * uv.y * 255));
-    m += rays * .3 * flare;
+
     return m;
 }
 float2 random(float2 p)
@@ -80,7 +76,7 @@ float4 layer(in float2 uv, float l, float s)
         {
             float2 offset = float2(x, y);
             float2 rv = random(gridID + offset + l);
-            float size = saturate((sin(time * 10 * rv.x)) * rv.y * .5) + min(s,1);
+            float size = saturate((sin(time * 10 * rv.x)) * rv.y * .5) + min(s,0.01);
             float d = length(gridUV - offset - rv);
             float4 col = float4(palette(length(random(rv)), float3(0.5, .5, .5), float3(0.5, .5, .5), float3(1, 1, 1), float3(0.5, 1, 1)),
             1);
@@ -173,7 +169,7 @@ float4 Cosmic(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 pos
     p = lastP;
     
     return 
-    float4(0,0,0,0);
+    space;
 }
     
 technique Technique1

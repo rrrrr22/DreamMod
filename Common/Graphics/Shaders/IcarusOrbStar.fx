@@ -67,10 +67,11 @@ float star(float2 uv, float flare)
 float4 IcarusOrbStar(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, float4 position : SV_Position) : COLOR0
 {
     float2 uv = (coords * 2 - 1);
-    float d = length((uv.y * 5));
+    float d = length((uv * 2));
     float m = 1 / d;
-
-    return (star(uv, (sin(time * 5) + 2))) * float4(colors[0], shaderData.x);
+    float dest = distance(float2(0.5 * 2.0 - 1.0, 0.5 * 2.0 - 1.0), uv);
+    float2 polar = float2(atan2(uv.y, uv.x) / (3.1415 * 0.5), dest);
+    return (star(uv, (sin(time * 5) + 2))).r * tex2D(image1, polar + time) * smoothstep(1,0,d);
 
     
 }

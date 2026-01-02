@@ -3,7 +3,6 @@ using DreamMod.Common.Systems;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Origins;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,7 +42,7 @@ namespace DreamMod.Common
         public static float EaseOutExpo(float x)
         {
 
-            return x == 1 ? 1 : 1 - MathF.Pow(2, -10 * x);
+            return x == 1 ? 1 : 1 - MathF.Pow(2, -12 * x);
         }
         public static DrawData[] DrawData_Spliting(DrawData data, int numberOfImages, float rotation, Color color, float offset)
         {

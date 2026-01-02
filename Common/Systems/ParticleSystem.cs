@@ -3,7 +3,6 @@ using DreamMod.Common.Graphics.Primitives;
 using Ionic.Zip;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using PegasusLib.Graphics;
 using ReLogic.Content;
 using System;
 using System.Collections.Generic;
@@ -199,14 +198,14 @@ namespace DreamMod.Common.Systems
 
             if (stripShader != null)
             {
-                stripShader.setProperties([color.ToVector3(), particlesAttributes.startColor.ToVector3(), particlesAttributes.endColor.ToVector3()], loadedTexture.Value, shaderData: new Vector4(opacity, timeleftPercent, 0, 0));
+                stripShader.setProperties([color.ToVector3(), particlesAttributes.startColor.ToVector3(), particlesAttributes.endColor.ToVector3()], loadedTexture?.Value, shaderData: new Vector4(opacity, timeleftPercent, 0, 0));
                 stripShader.apply();
                 vertexStrip.PrepareStripWithProceduralPadding(oldPositions, oldRotation, (_) => color, (p) => MathHelper.Lerp(particlesAttributes.stripWidth * size, particlesAttributes.stripEndWidth * size, p), -Main.screenPosition, true);
                 vertexStrip.DrawTrail();
             }
             if (shader != null)
             {
-                shader.setProperties([color.ToVector3(), particlesAttributes.startColor.ToVector3(), particlesAttributes.endColor.ToVector3()], loadedTexture.Value, shaderData: new Vector4(opacity, timeleftPercent, 0, 0));
+                shader.setProperties([color.ToVector3(), particlesAttributes.startColor.ToVector3(), particlesAttributes.endColor.ToVector3()], loadedTexture?.Value, shaderData: new Vector4(opacity, timeleftPercent, 0, 0));
                 shader.apply();
                 vertexRect.Draw(position - Main.screenPosition, Color.White, vertexRectSize * size, rotation, position - Main.screenPosition);
             }
@@ -223,6 +222,7 @@ namespace DreamMod.Common.Systems
         {
             type = particleInstances.Count;
             particleInstances.Add(this);
+            if(Texture != string.Empty)
             loadedTexture = ModContent.Request<Texture2D>(Texture);
         }
 

@@ -3,7 +3,6 @@ using DreamMod.Common.Graphics.Primitives;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
-using Origins;
 using ReLogic.Content;
 using SubworldLibrary;
 using System;
@@ -81,21 +80,6 @@ namespace DreamMod.Common.Subworlds
     }
     public class CosmicWorldSystem : ModSystem
     {
-        public override void Load()
-        {
-
-        }
-
-
-        public override void PostUpdatePlayers()
-        {
-
-
-            //i hope this will not break in upcoming terraria updates...
-            if (Main.myPlayer == 255 || !SubworldSystem.IsActive<CosmicWorld>())
-                return;
-
-        }
         public override void PreUpdateWorld()
         {
             if (SubworldSystem.IsActive<CosmicWorld>())

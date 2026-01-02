@@ -60,11 +60,11 @@ float4 GenericExplosion(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0, 
     float timeleft = shaderData.z;
     float progress = lerp(0, 1, ((timeleft - 170.) / (MAXTIMELEFT - 160.)));
     float progressAlpha = shaderData.w;
-
     float dest = distance(float2(0.5 * 2.0 - 1.0, 0.5 * 2.0 - 1.0), uv);
     float d = length(uv);
     float2 polar = float2(atan2(uv.y, uv.x) / (3.1415 * 0.5), dest);
-    return (tex2D(image1, polar - time) * float4(colors[0], 1) * smoothstep(0, 1, d) * step(clamp(d - progress, 0, 1), 1) * step(d, 1) + float4(colors[0], 1) * smoothstep(0.8, .9, d) * step(d, 1)) * lerp(5,0,progressAlpha);
+    float4 col = tex2D(image1,polar - time);
+    return col * (tex2D(image2, polar - time) * smoothstep(0, 1, d) * step(clamp(d - progress, 0, 1), 1) * step(d, 1) + smoothstep(0.8, .9, d) * step(d, 1)) * lerp(5, 0, progressAlpha);
 }
     
 technique Technique1

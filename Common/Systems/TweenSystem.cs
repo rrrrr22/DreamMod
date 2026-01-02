@@ -119,14 +119,18 @@ public class TweenHandler<T> where T : struct
         get => tweens;
 
         set
-        {
+        {   
+            tweens = [];
             value.ForEach((t) => tweens.Add(t));
-            currentTween = Tweens.First();
+            currentTween = Tweens.FirstOrDefault();
         }
     }
     public Tween<T> currentTween;
     public void PlayTweens()
     {
+        
+        if(tweens.Count <= 0)
+            return;
 
         foreach (var t in tweens)
         {
@@ -134,6 +138,7 @@ public class TweenHandler<T> where T : struct
         }
 
         currentTween = tweens[0].Start();
+
     }
 
     public void LinkTween(Tween<T> finishedTween)

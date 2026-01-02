@@ -11,7 +11,6 @@ using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
-using static Origins.Tiles.Riven.Shelf_Coral_TE;
 
 namespace DreamMod.Common.Systems
 {
@@ -86,6 +85,7 @@ namespace DreamMod.Common.Systems
     }
     public class AIState : ILoadable
     {
+        public virtual void Load() { }
         public virtual void SetDefaults() 
         {
         
@@ -98,7 +98,11 @@ namespace DreamMod.Common.Systems
             state.SetDefaults();
             return state;
         }
-        public virtual void StateDraw(DrawData mainSprite, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
+        public virtual void StatePostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
+        {
+        
+        }
+        public virtual void StatePreDraw(DrawData mainSprite, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
         {
         
         }
@@ -147,6 +151,8 @@ namespace DreamMod.Common.Systems
         {
             type = AIStates.Count;
             AIStates.Add(this);
+            Load();
+
         }
         public void Unload()
         {

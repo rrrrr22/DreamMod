@@ -25,8 +25,14 @@ float3 Rotate(float3 p, float3 axis, float angle)
 
 float4 CosmicBoarder(float2 coords : TEXCOORD0) : COLOR0
 {
-    float2 uv = coords + screenPosition / 500 / 16 / 16;
+    float2 uv = coords + screenPosition / 500 / 16 / 4;
     float4 finalCol = tex2D(image1, uv);
+    float2 gridUV = frac((uv + float2(0.,time * 0.1)) * 8)
+    -.5;
+    float value = gridUV.x > 0.45 && gridUV.x < 0.5 || gridUV.y > 0.45 && gridUV.y < 0.5 ? 1 : 0;
+    float grad = coords.y;
+    finalCol += float4(colors[1] * value * grad + smoothstep(0,2,grad), value * grad);
+    
     
     return finalCol;
 }

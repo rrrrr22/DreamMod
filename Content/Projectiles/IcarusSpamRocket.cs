@@ -3,8 +3,6 @@ using DreamMod.Common.Graphics;
 using DreamMod.Common.Graphics.Primitives;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Origins;
-using Origins.Items.Weapons.Ammo;
 using System;
 using System.Collections.Generic;
 using System.Linq;

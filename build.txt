@@ -1,4 +1,4 @@
 displayName = Dreams of Origins
 author = Rakan and Dev Team
 version = 0.1
-modReferences = SubworldLibrary, Origins, PegasusLib
+modReferences = SubworldLibrary

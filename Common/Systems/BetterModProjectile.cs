@@ -9,7 +9,7 @@ namespace DreamMod.Common.Systems
 {
     public abstract class BetterModProjectile : ModProjectile
     {
-
+        public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.None;
         public Vector2 spawnPosition = Vector2.Zero;
         public int maxTimeLeft = -1;
         public Particle projParticle = null;

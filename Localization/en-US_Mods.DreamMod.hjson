@@ -12,10 +12,14 @@ Biomes: {
 	}
 }
 
-NPCs.IcarusBoss.DisplayName: Icarus Boss
+NPCs: {
+	IcarusBoss.DisplayName: Icarus Boss
+	IcarusBossCore.DisplayName: Icarus Boss Core
+}
 
 Projectiles: {
 	IcarusSpamRocket.DisplayName: Icarus Spam Rocket
 	IcarusFlame.DisplayName: Icarus Flame
 	IcarusOrb.DisplayName: Icarus Orb
+	IcarusBullet.DisplayName: Icarus Bullet
 }
